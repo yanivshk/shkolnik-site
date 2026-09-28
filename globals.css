@@ -1,0 +1,158 @@
+@import "tailwindcss";
+@import "@fontsource-variable/heebo";
+@import "@fontsource-variable/inter";
+
+@theme {
+  --font-sans: "Heebo Variable", "Inter Variable", system-ui, sans-serif;
+  --font-latin: "Inter Variable", "Heebo Variable", system-ui, sans-serif;
+
+  /* פלטת מכבי ת"א: כחול רויאל וצהוב, מרוככים מעט לנוחות העין */
+  --color-night: #f3f6fc;
+  --color-deep: #e6eefb;
+  --color-royal: #1d4aa8;
+  --color-royal-2: #4f7fd6;
+  --color-navy: #13306e;
+  --color-gold: #ffd23f;
+  --color-gold-soft: #fff0b3;
+  --color-gold-deep: #b98c00;
+  --color-ink: #16223c;
+  --color-muted: #55637f;
+  --color-faint: #8490a8;
+  --color-up: #1f9a63;
+  --color-down: #d4466a;
+  --color-line: rgb(29 74 168 / 0.1);
+
+  --radius-card: 20px;
+}
+
+:root {
+  color-scheme: light;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 88px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--color-night);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* אווירה: זוהר כחול-זהב קבוע ברקע */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20vh -20vw;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(40vmax 40vmax at 85% 5%, rgb(29 74 168 / 0.16), transparent 60%),
+    radial-gradient(32vmax 32vmax at 5% 45%, rgb(255 210 63 / 0.22), transparent 60%),
+    radial-gradient(45vmax 45vmax at 70% 95%, rgb(29 74 168 / 0.12), transparent 60%);
+}
+
+/* רשת נקודות עדינה */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(rgb(29 74 168 / 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to bottom, black, transparent 70%);
+}
+
+@utility glass {
+  background: rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgb(29 74 168 / 0.1);
+  box-shadow: 0 10px 30px -16px rgb(19 48 110 / 0.3);
+}
+
+@utility glass-strong {
+  background: rgb(255 255 255 / 0.86);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid rgb(29 74 168 / 0.12);
+}
+
+/* מסגרת עדינה צהוב→כחול */
+@utility neon-edge {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgb(255 210 63 / 0.95), rgb(29 74 168 / 0.15) 45%, rgb(29 74 168 / 0.55));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+/* שם בצהוב מכבי על רקע כחול */
+@utility text-gold-metal {
+  color: var(--color-gold);
+  text-shadow: 0 2px 18px rgb(255 210 63 / 0.35);
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+.tabular { font-variant-numeric: tabular-nums; font-family: var(--font-latin); }
+
+/* כניסה חלקה של סקשנים בגלילה (רק בדפדפנים תומכים) */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+  }
+}
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(24px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.live-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+.press { transition: transform 0.18s ease, box-shadow 0.25s ease, border-color 0.25s ease; }
+.press:active { transform: scale(0.98); }
+@media (hover: hover) {
+  .press:hover { transform: translateY(-3px); box-shadow: 0 18px 40px -18px rgb(29 74 168 / 0.4); }
+}
+
+:focus-visible { outline: 2px solid var(--color-navy); outline-offset: 3px; border-radius: 8px; }
+
+/* פס "רק מכבי" רץ */
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee { animation: marquee 38s linear infinite; }
+
+/* פסים אלכסוניים צהובים עדינים */
+.maccabi-stripes {
+  background-image: repeating-linear-gradient(-35deg, rgb(255 210 63 / 0.10) 0 18px, transparent 18px 46px);
+}
