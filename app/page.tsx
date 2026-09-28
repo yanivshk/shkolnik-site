@@ -86,27 +86,13 @@ export default async function Home() {
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <a
-                href="#markets"
-                className="press inline-flex items-center gap-2 rounded-full border border-gold bg-gold px-5 py-3 text-[14px] font-bold text-navy shadow-[0_10px_24px_-10px_rgba(255,210,63,0.6)]"
-              >
-                לתמונת המצב
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 5v14M5 12l7 7 7-7" /></svg>
-              </a>
-              <a
                 href="/photo"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="press inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-5 py-3 text-[14px] font-bold text-white backdrop-blur"
+                className="press inline-flex items-center gap-2 rounded-full border border-gold bg-gold px-5 py-3 text-[14px] font-bold text-navy shadow-[0_10px_24px_-10px_rgba(255,210,63,0.6)]"
               >
                 לתמונה היומית
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 16 5-5 4 4 3-3 6 6" /><circle cx="16" cy="9" r="1.5" /></svg>
-              </a>
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
-                className="press inline-flex items-center gap-2 rounded-full border border-gold/60 bg-navy/40 px-5 py-3 text-[14px] font-bold text-gold backdrop-blur"
-              >
-                צור קשר
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
               </a>
             </div>
           </div>
@@ -183,7 +169,6 @@ export default async function Home() {
           </div>
           <div className="flex items-center justify-between py-6 text-[11px] text-faint">
             <span className="flex items-center gap-2"><MaccabiLogo className="h-5 w-5" />© {new Date().getFullYear()} <a href="/yaniv-shkolnik" className="hover:underline">{OWNER_FULL_NAME}</a></span>
-            <a href={`mailto:${CONTACT_EMAIL}`} className="font-bold text-royal hover:underline">צור קשר</a>
             <RakMaccabi variant="gold" />
             <span dir="ltr" className="font-latin">shkolnik.co.il</span>
           </div>
@@ -193,6 +178,15 @@ export default async function Home() {
             <p>ת50844047ת</p>
             <p>נ527771600נ</p>
             <p>ס503647428ס</p>
+          </div>
+          <div className="flex justify-center pb-6">
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="press inline-flex items-center gap-2 rounded-full border border-gold bg-royal px-6 py-3 text-[14px] font-bold text-gold shadow-[0_10px_24px_-12px_rgba(19,48,110,0.6)]"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
+              צור קשר
+            </a>
           </div>
         </footer>
       </main>
