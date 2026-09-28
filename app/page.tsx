@@ -1,5 +1,5 @@
 import { OWNER_NAME } from "@/lib/config";
-import { getAINews, getDailyPhoto, getGames, getMarkets, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
+import { getAINews, getGames, getMarkets, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
 import { formatPct, hebrewDate } from "@/lib/format";
 import type { Quote } from "@/lib/types";
 import { BottomNav, Clock, Greeting } from "@/components/client";
@@ -18,8 +18,8 @@ function PulseChip({ q }: { q: Quote }) {
 }
 
 export default async function Home() {
-  const [photo, markets, tsla, teslaNews, games, sportsNews, aiNews] = await Promise.all([
-    getDailyPhoto(), getMarkets(), getTeslaQuote(), getTeslaNews(), getGames(), getSportsNews(), getAINews(),
+  const [markets, tsla, teslaNews, games, sportsNews, aiNews] = await Promise.all([
+    getMarkets(), getTeslaQuote(), getTeslaNews(), getGames(), getSportsNews(), getAINews(),
   ]);
 
   const pulse = [markets.indices[0], markets.indices[2], tsla].filter(Boolean) as Quote[];
@@ -30,11 +30,11 @@ export default async function Home() {
       <header className="fixed inset-x-3 top-3 z-50 mx-auto max-w-5xl" style={{ top: "calc(10px + env(safe-area-inset-top, 0px))" }}>
         <div className="glass-strong flex items-center justify-between rounded-2xl px-4 py-2.5">
           <a href="#top" className="flex items-center gap-2.5" aria-label="לראש העמוד">
-            <span className="grid h-8 w-8 place-items-center rounded-[10px] border border-gold/60 font-latin text-[13px] font-black text-gold shadow-[0_0_18px_-4px_rgba(255,210,0,0.6)]">
+            <span className="grid h-8 w-8 place-items-center rounded-[10px] border border-gold bg-gold/50 font-latin text-[13px] font-black text-navy">
               YS
             </span>
             <span className="text-[15px] font-bold tracking-tight">
-              שקולניק<span className="text-gold">.</span>
+              שקולניק<span className="text-royal-2">.</span>
             </span>
           </a>
           <div className="flex items-center gap-3">
@@ -46,23 +46,17 @@ export default async function Home() {
       </header>
 
       <main id="top" className="pb-36">
-        {/* Hero — תמונת היום */}
-        <section className="relative isolate flex min-h-[78svh] items-end overflow-hidden rounded-b-[32px]" aria-label="תמונת היום">
-          {photo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={photo.src} alt={photo.description || photo.title} className="absolute inset-0 -z-20 h-full w-full scale-105 object-cover" fetchPriority="high" />
-          ) : (
-            <div className="absolute inset-0 -z-20 bg-gradient-to-br from-royal via-deep to-night" />
-          )}
-          <div className="absolute inset-0 -z-10 bg-gradient-to-t from-night via-night/55 to-night/10" />
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_100%_100%,rgba(18,51,148,0.55),transparent)]" />
+        {/* Hero — פסטל כחול-צהוב */}
+        <section className="relative isolate flex min-h-[70svh] items-end overflow-hidden rounded-b-[32px] bg-gradient-to-br from-royal/70 via-deep to-gold-soft/80" aria-label="פתיחה">
+          <div className="absolute -left-24 -top-24 -z-10 h-72 w-72 rounded-full bg-gold/45 blur-3xl" />
+          <div className="absolute -bottom-28 -right-20 -z-10 h-80 w-80 rounded-full bg-royal-2/40 blur-3xl" />
 
           <div className="mx-auto w-full max-w-5xl px-5 pb-10 pt-32">
-            <p className="mb-3 flex items-center gap-2 text-[12px] font-medium text-gold/90">
-              <span className="h-px w-8 bg-gold/70" />
+            <p className="mb-3 flex items-center gap-2 text-[12px] font-medium text-navy/80">
+              <span className="h-0.5 w-8 rounded-full bg-gold" />
               {hebrewDate()}
             </p>
-            <h1 className="max-w-[14ch] text-[44px] font-black leading-[0.95] tracking-tight sm:text-6xl">
+            <h1 className="max-w-[14ch] text-[44px] font-black leading-[1.05] tracking-tight sm:text-6xl">
               <Greeting name={OWNER_NAME} />
             </h1>
             <p className="mt-4 max-w-sm text-[15px] leading-relaxed text-ink/75">
@@ -75,19 +69,23 @@ export default async function Home() {
               </div>
             )}
 
-            <div className="mt-7 flex items-center gap-4">
+            <div className="mt-7 flex flex-wrap items-center gap-3">
               <a
                 href="#markets"
-                className="press inline-flex items-center gap-2 rounded-full border border-gold/70 bg-gold/10 px-5 py-3 text-[14px] font-bold text-gold shadow-[0_0_28px_-6px_rgba(255,210,0,0.65)] backdrop-blur"
+                className="press inline-flex items-center gap-2 rounded-full border border-gold bg-gold px-5 py-3 text-[14px] font-bold text-navy shadow-[0_10px_24px_-12px_rgba(36,66,124,0.45)]"
               >
                 לתמונת המצב
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 5v14M5 12l7 7 7-7" /></svg>
               </a>
-              {photo && (
-                <a href={photo.link} target="_blank" rel="noopener noreferrer" className="line-clamp-1 max-w-[45%] text-[11px] text-ink/55 underline-offset-4 hover:underline">
-                  תמונת היום · {photo.title}
-                </a>
-              )}
+              <a
+                href="/photo"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="press inline-flex items-center gap-2 rounded-full border border-royal-2/70 bg-white/70 px-5 py-3 text-[14px] font-bold text-navy backdrop-blur"
+              >
+                לתמונה היומית
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 16 5-5 4 4 3-3 6 6" /><circle cx="16" cy="9" r="1.5" /></svg>
+              </a>
             </div>
           </div>
         </section>

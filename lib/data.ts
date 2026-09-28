@@ -247,20 +247,32 @@ export async function getDailyPhoto(): Promise<DailyPhoto | null> {
   if (MOCK) return mock.photo();
   const d = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" })
     .format(new Date()).split("-");
+
+  // 1) תמונת היום של ויקימדיה — "Featured picture" שנבחרה בהצבעת הקהילה
   const data = await getJSON<WikiFeatured>(
     `https://api.wikimedia.org/feed/v1/wikipedia/en/featured/${d[0]}/${d[1]}/${d[2]}`,
     REVALIDATE.photo,
   );
   const img = data?.image;
-  if (!img) return null;
-  const thumb = img.thumbnail?.source;
-  const src = thumb ? thumb.replace(/\/\d+px-/, "/1600px-") : img.image?.source;
-  if (!src) return null;
-  return {
-    src,
-    title: decode(img.title.replace(/^File:/, "").replace(/\.[a-z]+$/i, "")),
-    description: decode(img.description?.text ?? ""),
-    credit: decode(img.artist?.text ?? "Wikimedia Commons"),
-    link: img.file_page ?? "https://commons.wikimedia.org/wiki/Main_Page",
-  };
+  if (img?.title) {
+    const file = img.title.replace(/^File:/, "");
+    return {
+      // Special:FilePath מחזיר גרסה מוקטנת תקנית (1920px) — בלי לנחש כתובת thumbnail
+      src: `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=1920`,
+      title: decode(file.replace(/\.[a-z]+$/i, "")),
+      description: decode(img.description?.text ?? ""),
+      credit: decode(img.artist?.text ?? "Wikimedia Commons"),
+      link: img.file_page ?? "https://commons.wikimedia.org/wiki/Main_Page",
+    };
+  }
+
+  // 2) גיבוי: NASA Astronomy Picture of the Day
+  const apod = await getJSON<{ media_type?: string; url?: string; hdurl?: string; title?: string }>(
+    `https://api.nasa.gov/planetary/apod?api_key=${process.env.NASA_API_KEY || "DEMO_KEY"}&date=${d.join("-")}`,
+    REVALIDATE.photo,
+  );
+  if (apod?.media_type === "image" && apod.url) {
+    return { src: apod.url, title: apod.title ?? "", description: "", credit: "NASA", link: apod.url };
+  }
+  return null;
 }

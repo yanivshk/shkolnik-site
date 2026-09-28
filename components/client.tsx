@@ -82,7 +82,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="ניווט ראשי"
-      className="glass-strong fixed inset-x-3 z-50 mx-auto max-w-md rounded-[26px] px-2 py-1.5 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.8)]"
+      className="glass-strong fixed inset-x-3 z-50 mx-auto max-w-md rounded-[26px] px-2 py-1.5 shadow-[0_20px_50px_-20px_rgba(36,66,124,0.35)]"
       style={{ bottom: "calc(12px + var(--safe-bottom))" }}
     >
       <ul className="flex items-stretch justify-between">
@@ -93,9 +93,9 @@ export function BottomNav() {
               <a
                 href={`#${n.id}`}
                 aria-current={on ? "true" : undefined}
-                className={`relative flex flex-col items-center gap-0.5 rounded-2xl py-2 text-[11px] transition-colors ${on ? "text-gold" : "text-muted hover:text-ink"}`}
+                className={`relative flex flex-col items-center gap-0.5 rounded-2xl py-2 text-[11px] transition-colors ${on ? "font-semibold text-navy" : "text-muted hover:text-ink"}`}
               >
-                {on && <span className="absolute inset-0 -z-10 rounded-2xl bg-gold/10 shadow-[inset_0_0_0_1px_rgba(255,210,0,0.25)]" />}
+                {on && <span className="absolute inset-0 -z-10 rounded-2xl bg-gold/45 shadow-[inset_0_0_0_1px_rgba(246,212,107,0.9)]" />}
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <path d={n.icon} />
                 </svg>

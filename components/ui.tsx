@@ -9,7 +9,7 @@ export function Section({ id, eyebrow, title, action, children }: {
     <section id={id} className="reveal mx-auto w-full max-w-5xl px-4 pt-12" aria-labelledby={`${id}-title`}>
       <div className="mb-5 flex items-end justify-between gap-4">
         <div>
-          <p className="mb-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-gold/80">
+          <p className="mb-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-navy/70">
             <span className="h-px w-6 bg-gradient-to-l from-gold to-transparent" />
             {eyebrow}
           </p>
@@ -93,11 +93,11 @@ export function NewsList({ items, showSource = true }: { items: NewsItem[]; show
             href={n.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.03] active:bg-white/[0.05]"
+            className="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-royal/20 active:bg-royal/30"
           >
-            <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${n.highlight ? "bg-gold shadow-[0_0_10px_#ffd200]" : "bg-royal-2/80"}`} />
+            <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${n.highlight ? "bg-gold ring-2 ring-gold/40" : "bg-royal-2/80"}`} />
             <span className="min-w-0 flex-1">
-              <span dir="auto" className={`line-clamp-2 block text-[15px] leading-snug ${n.highlight ? "font-bold text-gold-soft" : "font-medium"}`}>
+              <span dir="auto" className={`line-clamp-2 block text-[15px] leading-snug ${n.highlight ? "font-bold text-navy" : "font-medium"}`}>
                 {n.title}
               </span>
               <span className="mt-1 block text-[11px] text-faint">
@@ -125,8 +125,8 @@ export function NewsCarousel({ items }: { items: NewsItem[] }) {
           className="glass neon-edge press relative flex w-[78%] max-w-[320px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[var(--radius-card)] p-5 sm:w-[300px]"
           style={{ minHeight: 170 }}
         >
-          <span className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-royal-2/30 blur-2xl" />
-          <span className="relative inline-flex w-fit items-center gap-1.5 rounded-full border border-gold/30 bg-gold/10 px-2.5 py-0.5 text-[11px] font-semibold text-gold">
+          <span className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-gold/40 blur-2xl" />
+          <span className="relative inline-flex w-fit items-center gap-1.5 rounded-full border border-gold/70 bg-gold/40 px-2.5 py-0.5 text-[11px] font-semibold text-navy">
             {n.source}
           </span>
           <span dir="auto" className="relative mt-4 line-clamp-3 text-[17px] font-bold leading-snug">{n.title}</span>
@@ -160,7 +160,7 @@ export function GameCard({ g }: { g: Game }) {
   return (
     <article className={`glass press relative overflow-hidden rounded-[var(--radius-card)] p-4 ${g.highlight ? "neon-edge" : ""}`}>
       <div className="mb-3 flex items-center justify-between text-[11px]">
-        <span className="font-semibold text-gold/85">{g.league}</span>
+        <span className="font-semibold text-navy">{g.league}</span>
         {g.state === "in" ? (
           <span className="flex items-center gap-1.5 font-semibold text-down"><span className="live-dot h-1.5 w-1.5 rounded-full bg-down" />LIVE · {g.status}</span>
         ) : (

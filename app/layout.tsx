@@ -7,13 +7,13 @@ export const metadata: Metadata = {
   title: "Shkolnik · Hub",
   description: "הלוח האישי של יניב שקולניק — שווקים, טסלה, ספורט ו-AI",
   applicationName: "Shkolnik Hub",
-  appleWebApp: { capable: true, title: "Shkolnik", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Shkolnik", statusBarStyle: "default" },
   robots: isPublic ? undefined : { index: false, follow: false, nocache: true },
   formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#060a17",
+  themeColor: "#f4f7fc",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
