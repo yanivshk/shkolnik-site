@@ -161,3 +161,55 @@ export function MaccabiLogo({ className = "h-8 w-8" }: { className?: string }) {
   // eslint-disable-next-line @next/next/no-img-element
   return <img src="/maccabi-logo.webp" alt="מכבי תל אביב" width={264} height={264} className={`object-contain ${className}`} loading="lazy" />;
 }
+
+/** באנר נע מתקדם "רק מכבי": רקע כחול מונפש, ברק מחליק, שתי שורות בכיוונים מנוגדים */
+export function MaccabiBanner() {
+  const top = Array.from({ length: 8 });
+  const bottom = Array.from({ length: 10 });
+  const rowTop = (
+    <div className="flex shrink-0 items-center gap-7 pe-7">
+      {top.map((_, i) => (
+        <span key={i} className="flex items-center gap-7">
+          <span className="banner-word text-[26px] font-black leading-none text-gold">רק מכבי</span>
+          {i % 2 ? (
+            <RealSoccerBall id={`bn-s${i}`} className="spin-slow h-6 w-6" />
+          ) : (
+            <RealBasketball id={`bn-b${i}`} className="spin-slow h-6 w-6" />
+          )}
+        </span>
+      ))}
+    </div>
+  );
+  const rowBottom = (
+    <div className="flex shrink-0 items-center gap-5 pe-5">
+      {bottom.map((_, i) => (
+        <span key={i} className="flex items-center gap-5 text-[12px] font-extrabold tracking-[0.25em]">
+          <span className="text-transparent [-webkit-text-stroke:1px_rgba(255,255,255,0.75)]">רק מכבי</span>
+          <span className="h-1.5 w-1.5 rotate-45 bg-gold" />
+          <span className="font-latin text-white/70">RAK MACCABI</span>
+          <span className="h-1.5 w-1.5 rotate-45 bg-gold" />
+        </span>
+      ))}
+    </div>
+  );
+  return (
+    <div className="mx-auto max-w-5xl px-3">
+      <div
+        className="banner-bg relative -mt-6 overflow-hidden rounded-[22px] border border-gold/70 py-3 shadow-[0_18px_40px_-18px_rgba(19,48,110,0.75)]"
+        aria-label="רק מכבי"
+        role="img"
+      >
+        <span className="banner-shine pointer-events-none absolute inset-y-0 w-1/3" aria-hidden />
+        <div dir="ltr" className="banner-fade">
+          <div dir="ltr" className="marquee flex w-max">{rowTop}{rowTop}</div>
+          <div dir="ltr" className="marquee-rev mt-2 flex w-max">{rowBottom}{rowBottom}</div>
+        </div>
+        <span className="absolute inset-y-0 left-0 flex items-center bg-gradient-to-r from-navy via-navy/90 to-transparent pe-6 ps-2.5" aria-hidden>
+          <span className="logo-pulse rounded-full">
+            <MaccabiLogo className="h-11 w-11" />
+          </span>
+        </span>
+      </div>
+    </div>
+  );
+}

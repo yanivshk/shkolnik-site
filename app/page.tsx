@@ -3,8 +3,10 @@ import { getAINews, getGames, getMarkets, getSportsNews, getTeslaNews, getTeslaQ
 import { formatPct, hebrewDate } from "@/lib/format";
 import type { Quote } from "@/lib/types";
 import { BottomNav, Clock, Greeting } from "@/components/client";
+import { WeatherBar } from "@/components/weather";
+import { DEFAULT_PLACE, getWeather } from "@/lib/weather";
 import { Empty, GameCard, NewsCarousel, NewsList, QuoteTile, Section } from "@/components/ui";
-import { MaccabiDivider, MaccabiLogo, MaccabiMarquee, RakMaccabi, RealBasketball, RealSoccerBall } from "@/components/maccabi";
+import { MaccabiBanner, MaccabiDivider, MaccabiLogo, RakMaccabi, RealBasketball, RealSoccerBall } from "@/components/maccabi";
 
 export const revalidate = 300;
 
@@ -19,8 +21,8 @@ function PulseChip({ q }: { q: Quote }) {
 }
 
 export default async function Home() {
-  const [markets, tsla, teslaNews, games, sportsNews, aiNews] = await Promise.all([
-    getMarkets(), getTeslaQuote(), getTeslaNews(), getGames(), getSportsNews(), getAINews(),
+  const [markets, tsla, teslaNews, games, sportsNews, aiNews, weather] = await Promise.all([
+    getMarkets(), getTeslaQuote(), getTeslaNews(), getGames(), getSportsNews(), getAINews(), getWeather(DEFAULT_PLACE.lat, DEFAULT_PLACE.lon, DEFAULT_PLACE.name),
   ]);
 
   const pulse = [markets.indices[0], markets.indices[2], tsla].filter(Boolean) as Quote[];
@@ -53,10 +55,10 @@ export default async function Home() {
         <section className="relative isolate flex min-h-[70svh] items-end overflow-hidden rounded-b-[32px] bg-gradient-to-br from-navy via-royal to-royal-2 text-white" aria-label="פתיחה">
           <div className="maccabi-stripes absolute inset-0 -z-10" />
           <div className="absolute -left-24 -top-24 -z-10 h-72 w-72 rounded-full bg-gold/30 blur-3xl" />
-          <span className="pointer-events-none absolute -left-6 top-24 -z-10 -rotate-12 select-none text-[120px] font-black leading-none text-transparent [-webkit-text-stroke:1.5px_rgba(255,210,63,0.22)] sm:text-[180px]" aria-hidden>
+          <span className="pointer-events-none absolute -left-6 top-24 -z-10 hidden -rotate-12 select-none sm:block text-[120px] font-black leading-none text-transparent [-webkit-text-stroke:1.5px_rgba(255,210,63,0.22)] sm:text-[180px]" aria-hidden>
             רק מכבי
           </span>
-          <RealBasketball id="hero-b" className="absolute -left-8 top-[44%] -z-10 h-28 w-28 -rotate-12 opacity-90 drop-shadow-[0_14px_20px_rgba(0,0,0,0.35)]" />
+          <RealBasketball id="hero-b" className="absolute -left-10 top-[58%] -z-10 h-20 w-20 -rotate-12 sm:-left-8 sm:top-[44%] sm:h-28 sm:w-28 opacity-90 drop-shadow-[0_14px_20px_rgba(0,0,0,0.35)]" />
           <RealSoccerBall id="hero-s" className="absolute right-[42%] top-20 -z-10 h-12 w-12 rotate-12 opacity-90 drop-shadow-[0_10px_14px_rgba(0,0,0,0.35)] sm:top-28" />
           <MaccabiLogo className="absolute left-4 top-24 h-14 w-14 drop-shadow-[0_6px_14px_rgba(0,0,0,0.35)]" />
 
@@ -65,6 +67,7 @@ export default async function Home() {
               <span className="h-0.5 w-8 rounded-full bg-gold" />
               {hebrewDate()}
             </p>
+            <WeatherBar initial={weather} />
             <h1 className="max-w-[14ch] text-[44px] font-black leading-[1.05] tracking-tight sm:text-6xl">
               <Greeting name={OWNER_NAME} />
             </h1>
@@ -109,7 +112,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <MaccabiMarquee />
+        <MaccabiBanner />
 
         {/* שווקים */}
         <Section id="markets" eyebrow="Markets" title="שווקים">
@@ -186,9 +189,10 @@ export default async function Home() {
           </div>
           {/* שורות סמויות — בצבע הרקע, לא נראות לגולשים */}
           <div className="pb-4 text-center text-[13px] leading-6 text-transparent selection:bg-gold selection:text-navy" aria-hidden>
-            <p>ר1111111ר</p>
-            <p>א222222א</p>
-            <p>ע66666666ע</p>
+            <p>ג552266300ג</p>
+            <p>ת50844047ת</p>
+            <p>נ527771600נ</p>
+            <p>ס503647428ס</p>
           </div>
         </footer>
       </main>
