@@ -1,4 +1,4 @@
-import { OWNER_NAME } from "@/lib/config";
+import { CONTACT_EMAIL, OWNER_FULL_NAME, OWNER_NAME } from "@/lib/config";
 import { getAINews, getGames, getMarkets, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
 import { formatPct, hebrewDate } from "@/lib/format";
 import type { Quote } from "@/lib/types";
@@ -98,6 +98,13 @@ export default async function Home() {
                 לתמונה היומית
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 16 5-5 4 4 3-3 6 6" /><circle cx="16" cy="9" r="1.5" /></svg>
               </a>
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="press inline-flex items-center gap-2 rounded-full border border-gold/60 bg-navy/40 px-5 py-3 text-[14px] font-bold text-gold backdrop-blur"
+              >
+                צור קשר
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
+              </a>
             </div>
           </div>
         </section>
@@ -148,6 +155,18 @@ export default async function Home() {
           <div className="mt-4"><NewsList items={aiNews.slice(5, 12)} /></div>
         </Section>
 
+        {/* על יניב שקולניק */}
+        <section id="about" className="reveal mx-auto w-full max-w-5xl px-4 pt-12" aria-labelledby="about-title">
+          <a href="/yaniv-shkolnik" className="glass neon-edge press flex items-center justify-between gap-4 rounded-[var(--radius-card)] p-5">
+            <span>
+              <span className="block text-[11px] font-bold uppercase tracking-[0.2em] text-royal">About</span>
+              <h2 id="about-title" className="mt-1 text-[22px] font-extrabold">{OWNER_FULL_NAME}</h2>
+              <span className="mt-1 block text-[14px] text-muted">המדען שחוקר את החסה בשטח — לכתבה המלאה</span>
+            </span>
+            <MaccabiLogo className="h-12 w-12 shrink-0" />
+          </a>
+        </section>
+
         <footer className="mx-auto mt-16 max-w-5xl px-4">
           <div className="relative overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-l from-royal to-navy px-5 py-6 text-center">
             <div className="maccabi-stripes absolute inset-0" />
@@ -160,12 +179,13 @@ export default async function Home() {
             <p className="relative mt-1 text-[12px] font-semibold text-white/70">צהוב בלב, כחול בדם</p>
           </div>
           <div className="flex items-center justify-between py-6 text-[11px] text-faint">
-            <span className="flex items-center gap-2"><MaccabiLogo className="h-5 w-5" />© {new Date().getFullYear()} יניב שקולניק</span>
+            <span className="flex items-center gap-2"><MaccabiLogo className="h-5 w-5" />© {new Date().getFullYear()} <a href="/yaniv-shkolnik" className="hover:underline">{OWNER_FULL_NAME}</a></span>
+            <a href={`mailto:${CONTACT_EMAIL}`} className="font-bold text-royal hover:underline">צור קשר</a>
             <RakMaccabi variant="gold" />
             <span dir="ltr" className="font-latin">shkolnik.co.il</span>
           </div>
           {/* שורות סמויות — בצבע הרקע, לא נראות לגולשים */}
-          <div className="select-none pb-4 text-center text-[13px] leading-6 text-transparent" aria-hidden>
+          <div className="pb-4 text-center text-[13px] leading-6 text-transparent selection:bg-gold selection:text-navy" aria-hidden>
             <p>ר1111111ר</p>
             <p>א222222א</p>
             <p>ע66666666ע</p>

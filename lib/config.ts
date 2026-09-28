@@ -61,3 +61,9 @@ export const REVALIDATE = {
 };
 
 export const TZ = "Asia/Jerusalem";
+
+/** כתובת האתר הקנונית (לצורכי SEO) ופרטי קשר */
+export const SITE_URL = process.env.SITE_URL || "https://www.shkolnik.co.il";
+export const OWNER_FULL_NAME = "יניב שקולניק";
+export const OWNER_FULL_NAME_EN = "Yaniv Shkolnik";
+export const CONTACT_EMAIL = "FuckHapoel@shkolnik.co.il";
