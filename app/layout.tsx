@@ -4,7 +4,7 @@ import "./globals.css";
 const isPublic = process.env.SITE_PUBLIC === "true";
 
 export const metadata: Metadata = {
-  title: "Shkolnik · Hub",
+  title: "Shkolnik · Hub · רק מכבי",
   description: "הלוח האישי של יניב שקולניק — שווקים, טסלה, ספורט ו-AI",
   applicationName: "Shkolnik Hub",
   appleWebApp: { capable: true, title: "Shkolnik", statusBarStyle: "default" },

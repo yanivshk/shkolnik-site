@@ -9,8 +9,8 @@ export function Section({ id, eyebrow, title, action, children }: {
     <section id={id} className="reveal mx-auto w-full max-w-5xl px-4 pt-12" aria-labelledby={`${id}-title`}>
       <div className="mb-5 flex items-end justify-between gap-4">
         <div>
-          <p className="mb-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-navy/70">
-            <span className="h-px w-6 bg-gradient-to-l from-gold to-transparent" />
+          <p className="mb-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-royal">
+            <span className="h-px w-6 bg-gradient-to-l from-gold to-royal/30" />
             {eyebrow}
           </p>
           <h2 id={`${id}-title`} className="text-[28px] font-extrabold leading-none tracking-tight">{title}</h2>
@@ -93,11 +93,11 @@ export function NewsList({ items, showSource = true }: { items: NewsItem[]; show
             href={n.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-royal/20 active:bg-royal/30"
+            className="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-royal/[0.05] active:bg-royal/[0.09]"
           >
             <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${n.highlight ? "bg-gold ring-2 ring-gold/40" : "bg-royal-2/80"}`} />
             <span className="min-w-0 flex-1">
-              <span dir="auto" className={`line-clamp-2 block text-[15px] leading-snug ${n.highlight ? "font-bold text-navy" : "font-medium"}`}>
+              <span dir="auto" className={`line-clamp-2 block text-[15px] leading-snug ${n.highlight ? "font-bold text-royal" : "font-medium"}`}>
                 {n.title}
               </span>
               <span className="mt-1 block text-[11px] text-faint">
@@ -125,7 +125,7 @@ export function NewsCarousel({ items }: { items: NewsItem[] }) {
           className="glass neon-edge press relative flex w-[78%] max-w-[320px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[var(--radius-card)] p-5 sm:w-[300px]"
           style={{ minHeight: 170 }}
         >
-          <span className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-gold/40 blur-2xl" />
+          <span className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-gold/50 blur-2xl" />
           <span className="relative inline-flex w-fit items-center gap-1.5 rounded-full border border-gold/70 bg-gold/40 px-2.5 py-0.5 text-[11px] font-semibold text-navy">
             {n.source}
           </span>
@@ -145,7 +145,7 @@ function Team({ t, win }: { t: Game["home"]; win: boolean }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={t.logo} alt="" width={22} height={22} className="h-[22px] w-[22px] object-contain" loading="lazy" />
         ) : (
-          <span className="grid h-[22px] w-[22px] place-items-center rounded-full bg-royal/60 text-[9px] font-bold">{t.short.slice(0, 2)}</span>
+          <span className="grid h-[22px] w-[22px] place-items-center rounded-full bg-royal/15 text-[9px] font-bold text-royal">{t.short.slice(0, 2)}</span>
         )}
         <span dir="ltr" className={`truncate text-[14px] ${win ? "font-bold" : "text-ink/85"}`}>{t.name}</span>
       </span>
