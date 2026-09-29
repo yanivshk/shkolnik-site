@@ -135,7 +135,7 @@ export default async function Home() {
         <section className="mx-auto w-full max-w-5xl px-4 pt-10" aria-label="תמונות יומיות">
           <div className="grid grid-cols-2 gap-3">
             <PhotoLink href="/photo" label="תמונה יומית" />
-            <PhotoLink href="/tesla-photo" label="תמונת טסלה" />
+            <PhotoLink href="/tesla-photo" label="טסלה" />
           </div>
         </section>
 
