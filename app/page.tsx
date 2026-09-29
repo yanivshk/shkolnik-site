@@ -88,7 +88,7 @@ export default async function Home() {
         </section>
 
         {/* שווקים */}
-        <Section id="markets" eyebrow="Markets" title="שווקים" tight>
+        <Section id="markets" eyebrow="Markets" title="מניות ומדדים" tight>
           {markets.indices.length ? (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
               {markets.indices.map((q) => <QuoteTile key={q.symbol} q={q} showCurrency={false} />)}
