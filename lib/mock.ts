@@ -17,8 +17,8 @@ const q = (symbol: string, name: string, base: number, seed: number, currency = 
 };
 
 export const markets = () => ({
-  indices: [q("TA35.TA", 'ת"א-35', 4218, 3, "ILS"), q("^TA125.TA", 'ת"א-125', 4390, 7, "ILS"), q("^GSPC", "S&P 500", 6890, 11), q("^IXIC", 'נאסד"ק', 23410, 5)],
-  stocks: [q("NVDA", "Nvidia", 212, 13), q("MSFT", "Microsoft", 548, 17), q("GOOGL", "Alphabet", 268, 19), q("ESLT.TA", "אלביט", 162000, 23, "ILA"), q("ILS=X", "דולר/שקל", 3.34, 29, "ILS"), q("BTC-USD", "ביטקוין", 118400, 31)],
+  indices: [q("TA35.TA", 'ת"א-35', 4218, 3, "ILS"), q("^TA125.TA", 'ת"א-125', 4390, 7, "ILS"), q("TA90.TA", 'ת"א-90', 3670, 9, "ILS"), q("^GSPC", "S&P 500", 6890, 11), q("^IXIC", 'נאסד"ק', 23410, 5)],
+  stocks: [q("NVDA", "Nvidia", 212, 13), q("MSFT", "Microsoft", 548, 17), q("GOOGL", "Alphabet", 268, 19), q("AMD", "AMD", 607, 41), q("INTC", "Intel", 116, 43), q("SMH", "SMH · שבבים", 600, 47), q("DRAM", "DRAM · זיכרון", 59.7, 53), q("ESLT.TA", "אלביט", 162000, 23, "ILA"), q("DSIT.TA", "DSIT", 1480, 59, "ILA"), q("ILS=X", "דולר/שקל", 3.34, 29, "ILS"), q("BTC-USD", "ביטקוין", 118400, 31)],
 });
 
 export const tesla = () => q("TSLA", "Tesla", 448, 37);
@@ -57,6 +57,10 @@ export const games = (): Game[] => [
   { id: "3", league: "ליגת האלופות", date: ago(30), status: "FT", state: "post", highlight: false,
     home: { name: "Real Madrid", short: "RMA", score: "2" }, away: { name: "Arsenal", short: "ARS", score: "2" } },
 ];
+
+export const teslaPhoto = (): DailyPhoto => ({
+  src: "/mock-photo.jpg", title: "Tesla Model 3", description: "", credit: "Wikimedia Commons", link: "https://commons.wikimedia.org",
+});
 
 export const photo = (): DailyPhoto => ({
   src: "/mock-photo.jpg",

@@ -2,7 +2,7 @@ import "server-only";
 import { XMLParser } from "fast-xml-parser";
 import {
   AI_FEEDS, HIGHLIGHT_KEYWORDS, HIGHLIGHT_TEAMS, INDICES, REVALIDATE,
-  SPORTS_LEAGUES, SPORTS_NEWS_FEEDS, STOCKS, TESLA_FEEDS, TESLA_SYMBOL, TZ,
+  SPORTS_LEAGUES, SPORTS_NEWS_FEEDS, STOCKS, TESLA_FEEDS, TESLA_PHOTO_SEARCH, TESLA_SYMBOL, TZ,
 } from "./config";
 import type { DailyPhoto, Game, NewsItem, Quote } from "./types";
 import * as mock from "./mock";
@@ -275,4 +275,43 @@ export async function getDailyPhoto(): Promise<DailyPhoto | null> {
     return { src: apod.url, title: apod.title ?? "", description: "", credit: "NASA", link: apod.url };
   }
   return null;
+}
+
+/* ---------------- Daily Tesla photo (Wikimedia Commons "Quality images", keyless) ---------------- */
+
+type CommonsSearch = {
+  query?: {
+    pages?: Record<string, {
+      title: string;
+      imageinfo?: { thumburl?: string; url: string; width: number; height: number; mime: string; descriptionurl?: string }[];
+    }>;
+  };
+};
+
+/** תמונת טסלה ליום — נבחרת באופן קבוע לפי התאריך מתוך מאגר תמונות איכותיות (מתחלפת כל יום) */
+export async function getTeslaPhoto(): Promise<DailyPhoto | null> {
+  if (MOCK) return mock.teslaPhoto();
+  const params = new URLSearchParams({
+    action: "query", format: "json", generator: "search", gsrnamespace: "6", gsrlimit: "200",
+    gsrsearch: TESLA_PHOTO_SEARCH, prop: "imageinfo", iiprop: "url|size|mime", iiurlwidth: "1920",
+  });
+  const data = await getJSON<CommonsSearch>(`https://commons.wikimedia.org/w/api.php?${params}`, REVALIDATE.photo);
+  const pool = Object.values(data?.query?.pages ?? {})
+    .filter((p) => {
+      const i = p.imageinfo?.[0];
+      return i && i.mime === "image/jpeg" && i.width >= i.height * 1.2 && !/coil|nikola|tower|museum|bust|statue/i.test(p.title);
+    })
+    .sort((a, b) => a.title.localeCompare(b.title));
+  if (!pool.length) return null;
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const day = Math.floor(Date.parse(`${today}T00:00:00Z`) / 86400000);
+  const pick = pool[day % pool.length];
+  const info = pick.imageinfo![0];
+  return {
+    src: info.thumburl ?? info.url,
+    title: decode(pick.title.replace(/^File:/, "").replace(/\.[a-z]+$/i, "")),
+    description: "",
+    credit: "Wikimedia Commons",
+    link: info.descriptionurl ?? "https://commons.wikimedia.org",
+  };
 }
