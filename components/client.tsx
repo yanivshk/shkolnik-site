@@ -33,6 +33,26 @@ export function Greeting({ name }: { name: string }) {
   );
 }
 
+/** שעוני עולם — שורה אחת, כל שעון מסומן בקיצור באנגלית */
+export function WorldClocks({ clocks }: { clocks: { label: string; tz: string }[] }) {
+  const now = useNow(15_000);
+  return (
+    <div dir="ltr" className="mb-4 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${clocks.length}, minmax(0, 1fr))` }} aria-label="שעוני עולם">
+      {clocks.map((c) => {
+        const t = now
+          ? new Intl.DateTimeFormat("en-GB", { timeZone: c.tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(now)
+          : "--:--";
+        return (
+          <div key={c.label} className="flex flex-col items-center rounded-xl border border-white/25 bg-white/10 px-1 py-1.5 backdrop-blur">
+            <span className="font-latin text-[10px] font-bold tracking-[0.12em] text-gold">{c.label}</span>
+            <span className="tabular text-[15px] font-bold leading-tight text-white" suppressHydrationWarning>{t}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /** מונה מונפש — נעצר מיידית אם המשתמש ביקש להפחית תנועה */
 export function CountUp({ value, digits, prefix = "", suffix = "" }: { value: number; digits: number; prefix?: string; suffix?: string }) {
   const [v, setV] = useState(value);
@@ -82,8 +102,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="ניווט ראשי"
-      className="glass-strong fixed inset-x-3 z-50 mx-auto max-w-md rounded-[26px] px-2 py-1.5 shadow-[0_20px_50px_-20px_rgba(19,48,110,0.4)]"
-      style={{ bottom: "calc(12px + var(--safe-bottom))" }}
+      className="glass-strong isolate mx-auto w-full max-w-md rounded-[26px] px-2 py-1.5 shadow-[0_20px_50px_-20px_rgba(19,48,110,0.4)]"
     >
       <ul className="flex items-stretch justify-between">
         {NAV.map((n) => {
