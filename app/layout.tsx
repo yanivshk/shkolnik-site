@@ -1,13 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { OWNER_FULL_NAME, OWNER_FULL_NAME_EN, SITE_URL } from "@/lib/config";
+import { OWNER_FULL_NAME, OWNER_FULL_NAME_EN, SEARCH_SNIPPET, SITE_URL } from "@/lib/config";
 
 const isPublic = process.env.SITE_PUBLIC === "true";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: `${OWNER_FULL_NAME} | ${OWNER_FULL_NAME_EN} · רק מכבי`, template: `%s | ${OWNER_FULL_NAME}` },
-  description: `האתר הרשמי של ${OWNER_FULL_NAME} (${OWNER_FULL_NAME_EN}) — מדען וחוקר גידולי חסה בשטח. שווקים, טסלה, ספורט ו-AI במקום אחד.`,
+  // תוצאת החיפוש בגוגל: השם בכותרת, והמשפט "מה זה הפועל?" בתיאור
+  title: { default: OWNER_FULL_NAME, template: `%s | ${OWNER_FULL_NAME}` },
+  description: SEARCH_SNIPPET,
   keywords: [OWNER_FULL_NAME, OWNER_FULL_NAME_EN, "שקולניק", "Shkolnik", "יניב שקולניק מדען", "חקר גידול חסה"],
   authors: [{ name: OWNER_FULL_NAME, url: SITE_URL }],
   creator: OWNER_FULL_NAME,
@@ -18,8 +19,8 @@ export const metadata: Metadata = {
     locale: "he_IL",
     url: SITE_URL,
     siteName: OWNER_FULL_NAME,
-    title: `${OWNER_FULL_NAME} — האתר הרשמי`,
-    description: `${OWNER_FULL_NAME}, מדען וחוקר גידולי חסה בשטח.`,
+    title: OWNER_FULL_NAME,
+    description: SEARCH_SNIPPET,
   },
   appleWebApp: { capable: true, title: "Shkolnik", statusBarStyle: "default" },
   robots: isPublic ? { index: true, follow: true } : { index: false, follow: false, nocache: true },
