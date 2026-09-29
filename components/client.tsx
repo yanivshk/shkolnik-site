@@ -85,7 +85,7 @@ export function CountUp({ value, digits, prefix = "", suffix = "" }: { value: nu
 
 const NAV = [
   { id: "top", label: "בית", icon: "M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" },
-  { id: "markets", label: "שווקים", icon: "M3 17l5-5 4 4 8-9M15 7h5v5" },
+  { id: "markets", label: "מניות", icon: "M3 17l5-5 4 4 8-9M15 7h5v5" },
   { id: "tesla", label: "טסלה", icon: "M13 2 4 14h7l-1 8 9-12h-7z" },
   { id: "sports", label: "ספורט", icon: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3v18M5.6 5.6c2.5 2.5 2.5 10.3 0 12.8M18.4 5.6c-2.5 2.5-2.5 10.3 0 12.8" },
   { id: "ai", label: "AI", icon: "M9 3v2M15 3v2M9 19v2M15 19v2M3 9h2M3 15h2M19 9h2M19 15h2M7 7h10v10H7zM10 10h4v4h-4z" },
