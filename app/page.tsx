@@ -6,7 +6,7 @@ import { BottomNav, Clock, Greeting, WorldClocks } from "@/components/client";
 import { WeatherBar } from "@/components/weather";
 import { DEFAULT_PLACE, getWeather } from "@/lib/weather";
 import { Empty, GameCard, NewsCarousel, NewsList, QuoteTile, Section } from "@/components/ui";
-import { MaccabiDivider, MaccabiLogo, MaccabiTicker, RakMaccabi, RealBasketball, RealSoccerBall } from "@/components/maccabi";
+import { BallsBackdrop, MaccabiBanner, MaccabiDivider, MaccabiLogo, RakMaccabi, RealBasketball, RealSoccerBall } from "@/components/maccabi";
 
 export const revalidate = 300;
 
@@ -38,6 +38,7 @@ export default async function Home() {
 
   return (
     <>
+      <BallsBackdrop />
       {/* Header — זכוכית צפה */}
       <header className="fixed inset-x-3 top-3 z-50 mx-auto max-w-5xl" style={{ top: "calc(10px + env(safe-area-inset-top, 0px))" }}>
         <div className="glass-strong flex items-center justify-between rounded-2xl px-4 py-2.5">
@@ -59,28 +60,25 @@ export default async function Home() {
         </div>
       </header>
 
-      <main id="top" style={{ paddingBottom: "calc(150px + var(--safe-bottom))" }}>
+      <main id="top" style={{ paddingBottom: "calc(185px + var(--safe-bottom))" }}>
         {/* Hero — כחול מכבי עם פסים צהובים. התוכן מתחיל מיד מתחת לכותרת, בלי שטח ריק */}
         <section className="relative isolate overflow-hidden rounded-b-[28px] bg-gradient-to-br from-navy via-royal to-royal-2 text-white" aria-label="פתיחה">
           <div className="maccabi-stripes absolute inset-0 -z-10" />
           <div className="absolute -left-24 -top-24 -z-10 h-72 w-72 rounded-full bg-gold/30 blur-3xl" />
 
-          <div className="mx-auto w-full max-w-5xl px-4 pb-6" style={{ paddingTop: "calc(84px + env(safe-area-inset-top, 0px))" }}>
-            <p className="mb-3 flex items-center gap-2 text-[12px] font-medium text-white/80">
+          <div className="mx-auto w-full max-w-5xl px-4 pb-4" style={{ paddingTop: "calc(80px + env(safe-area-inset-top, 0px))" }}>
+            <p className="mb-2 flex items-center gap-2 text-[12px] font-medium text-white/80">
               <span className="h-0.5 w-8 rounded-full bg-gold" />
               {hebrewDate()}
             </p>
             <WorldClocks clocks={WORLD_CLOCKS} />
             <WeatherBar initial={weather} />
-            <h1 className="text-[36px] font-black leading-[1.05] tracking-tight sm:text-6xl">
+            <h1 className="text-[32px] font-black leading-[1.05] tracking-tight sm:text-6xl">
               <Greeting name={OWNER_NAME} />
             </h1>
-            <p className="mt-2 max-w-sm text-[14px] leading-relaxed text-white/80">
-              השווקים, טסלה, הספורט וה-AI שחשובים לך — מתעדכנים לבד, במקום אחד.
-            </p>
 
             {pulse.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {pulse.map((q) => <PulseChip key={q.symbol} q={q} />)}
               </div>
             )}
@@ -88,7 +86,7 @@ export default async function Home() {
         </section>
 
         {/* שווקים */}
-        <Section id="markets" eyebrow="Markets" title="שווקים">
+        <Section id="markets" eyebrow="Markets" title="שווקים" tight>
           {markets.indices.length ? (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
               {markets.indices.map((q) => <QuoteTile key={q.symbol} q={q} showCurrency={false} />)}
@@ -188,7 +186,7 @@ export default async function Home() {
 
       {/* תחתית קבועה: הבאנר רץ, ומתחתיו כפתורי הניווט */}
       <div className="fixed inset-x-3 z-50 mx-auto flex max-w-md flex-col gap-2" style={{ bottom: "calc(10px + var(--safe-bottom))" }}>
-        <MaccabiTicker />
+        <MaccabiBanner docked />
         <BottomNav />
       </div>
     </>

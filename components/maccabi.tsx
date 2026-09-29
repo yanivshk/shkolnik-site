@@ -163,7 +163,7 @@ export function MaccabiLogo({ className = "h-8 w-8" }: { className?: string }) {
 }
 
 /** באנר נע מתקדם "רק מכבי": רקע כחול מונפש, ברק מחליק, שתי שורות בכיוונים מנוגדים */
-export function MaccabiBanner() {
+export function MaccabiBanner({ docked = false }: { docked?: boolean }) {
   const top = Array.from({ length: 8 });
   const bottom = Array.from({ length: 10 });
   const rowTop = (
@@ -193,9 +193,9 @@ export function MaccabiBanner() {
     </div>
   );
   return (
-    <div className="mx-auto max-w-5xl px-3">
+    <div className={docked ? "w-full" : "mx-auto max-w-5xl px-3"}>
       <div
-        className="banner-bg relative -mt-6 overflow-hidden rounded-[22px] border border-gold/70 py-3 shadow-[0_18px_40px_-18px_rgba(19,48,110,0.75)]"
+        className={`banner-bg relative ${docked ? "" : "-mt-6"} overflow-hidden rounded-[22px] border border-gold/70 py-3 shadow-[0_18px_40px_-18px_rgba(19,48,110,0.75)]`}
         aria-label="רק מכבי"
         role="img"
       >
@@ -236,6 +236,16 @@ export function MaccabiTicker() {
       <span className="absolute inset-y-0 left-0 flex items-center ps-1" aria-hidden>
         <MaccabiLogo className="h-7 w-7" />
       </span>
+    </div>
+  );
+}
+
+/** רקע קבוע: כדורגל וכדורסל שקופים בשולי המסך — לא תופסים מקום ולא מסתירים טקסט */
+export function BallsBackdrop() {
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden" style={{ zIndex: -1 }} aria-hidden>
+      <RealBasketball id="bg-b" className="absolute -left-20 top-[38%] h-52 w-52 -rotate-12 opacity-[0.10] blur-[0.5px]" />
+      <RealSoccerBall id="bg-s" className="absolute -right-16 top-[68%] h-44 w-44 rotate-12 opacity-[0.10] blur-[0.5px]" />
     </div>
   );
 }
