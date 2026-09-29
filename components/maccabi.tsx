@@ -239,3 +239,13 @@ export function MaccabiTicker() {
     </div>
   );
 }
+
+/** רקע קבוע: כדורגל וכדורסל שקופים בשולי המסך — לא תופסים מקום ולא מסתירים טקסט */
+export function BallsBackdrop() {
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden" style={{ zIndex: -1 }} aria-hidden>
+      <RealBasketball id="bg-b" className="absolute -left-20 top-[38%] h-52 w-52 -rotate-12 opacity-[0.10] blur-[0.5px]" />
+      <RealSoccerBall id="bg-s" className="absolute -right-16 top-[68%] h-44 w-44 rotate-12 opacity-[0.10] blur-[0.5px]" />
+    </div>
+  );
+}
