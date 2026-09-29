@@ -92,4 +92,7 @@ export const TESLA_PHOTO_SEARCH = "intitle:Tesla incategory:Quality_images";
 export const SITE_URL = process.env.SITE_URL || "https://www.shkolnik.co.il";
 export const OWNER_FULL_NAME = "יניב שקולניק";
 export const OWNER_FULL_NAME_EN = "Yaniv Shkolnik";
+
+/** התיאור שמופיע בגוגל מתחת לשם (עמוד הבית ודפי המשפחה) */
+export const SEARCH_SNIPPET = "מה זה הפועל?";
 export const CONTACT_EMAIL = "FuckHapoel@shkolnik.co.il";
