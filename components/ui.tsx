@@ -1,12 +1,13 @@
 import type { Game, NewsItem, Quote } from "@/lib/types";
 import { currencySymbol, formatGameTime, formatPct, normalizePrice, priceDigits, timeAgo } from "@/lib/format";
 import { CountUp } from "./client";
+import { quoteLink } from "@/lib/config";
 
-export function Section({ id, eyebrow, title, action, children }: {
-  id: string; eyebrow: string; title: string; action?: React.ReactNode; children: React.ReactNode;
+export function Section({ id, eyebrow, title, action, children, tight = false }: {
+  id: string; eyebrow: string; title: string; action?: React.ReactNode; children: React.ReactNode; tight?: boolean;
 }) {
   return (
-    <section id={id} className="reveal mx-auto w-full max-w-5xl px-4 pt-12" aria-labelledby={`${id}-title`}>
+    <section id={id} className={`reveal mx-auto w-full max-w-5xl px-4 ${tight ? "pt-6" : "pt-12"}`} aria-labelledby={`${id}-title`}>
       <div className="mb-5 flex items-end justify-between gap-4">
         <div>
           <p className="mb-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-royal">
@@ -65,9 +66,12 @@ export function QuoteTile({ q, featured = false, showCurrency = true }: { q: Quo
   const { value, currency } = normalizePrice(q.price, q.currency);
   const up = q.changePct >= 0;
   const digits = priceDigits(value);
+  const href = quoteLink(q.symbol);
+  const Tag = href ? "a" : "article";
   return (
-    <article
-      className={`glass neon-edge press relative overflow-hidden rounded-[var(--radius-card)] p-4 ${featured ? "col-span-2" : ""}`}
+    <Tag
+      {...(href ? { href, target: "_blank", rel: "noopener noreferrer" } : {})}
+      className={`glass neon-edge press relative block overflow-hidden rounded-[var(--radius-card)] p-4 ${featured ? "col-span-2" : ""}`}
       aria-label={`${q.name} ${formatPct(q.changePct)}`}
     >
       <div className="flex items-baseline justify-between gap-2">
@@ -79,7 +83,7 @@ export function QuoteTile({ q, featured = false, showCurrency = true }: { q: Quo
       </p>
       <div className="mt-2"><ChangePill pct={q.changePct} /></div>
       <Sparkline data={q.series} up={up} id={q.symbol.replace(/[^a-z0-9]/gi, "")} className={`mt-3 w-full ${featured ? "h-24" : "h-10"}`} />
-    </article>
+    </Tag>
   );
 }
 

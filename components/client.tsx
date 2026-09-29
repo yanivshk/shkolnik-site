@@ -37,14 +37,17 @@ export function Greeting({ name }: { name: string }) {
 export function WorldClocks({ clocks }: { clocks: { label: string; tz: string }[] }) {
   const now = useNow(15_000);
   return (
-    <div dir="ltr" className="mb-4 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${clocks.length}, minmax(0, 1fr))` }} aria-label="שעוני עולם">
+    <div dir="ltr" className="mb-3 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${clocks.length}, minmax(0, 1fr))` }} aria-label="שעוני עולם">
       {clocks.map((c) => {
         const t = now
           ? new Intl.DateTimeFormat("en-GB", { timeZone: c.tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(now)
           : "--:--";
         return (
           <div key={c.label} className="flex flex-col items-center rounded-xl border border-white/25 bg-white/10 px-1 py-1.5 backdrop-blur">
-            <span className="font-latin text-[10px] font-bold tracking-[0.12em] text-gold">{c.label}</span>
+            <span className="flex items-center gap-1 font-latin text-[10px] font-bold tracking-[0.12em] text-gold">
+              <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+              {c.label}
+            </span>
             <span className="tabular text-[15px] font-bold leading-tight text-white" suppressHydrationWarning>{t}</span>
           </div>
         );

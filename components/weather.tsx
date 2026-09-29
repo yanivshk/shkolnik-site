@@ -101,7 +101,7 @@ export function WeatherBar({ initial }: { initial: Weather | null }) {
   const c = condition(w.code, w.isDay);
 
   return (
-    <div className="relative mb-4">
+    <div className="relative mb-3">
       <div className="flex flex-wrap items-center gap-1.5">
         <Chip icon={c.d} label={`${c.label}, ${w.temp} מעלות`}>{w.temp}°</Chip>
         <Chip icon={DROP} label={`לחות ${w.humidity}%`}>{w.humidity}%</Chip>

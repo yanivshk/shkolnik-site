@@ -163,7 +163,7 @@ export function MaccabiLogo({ className = "h-8 w-8" }: { className?: string }) {
 }
 
 /** באנר נע מתקדם "רק מכבי": רקע כחול מונפש, ברק מחליק, שתי שורות בכיוונים מנוגדים */
-export function MaccabiBanner() {
+export function MaccabiBanner({ docked = false }: { docked?: boolean }) {
   const top = Array.from({ length: 8 });
   const bottom = Array.from({ length: 10 });
   const rowTop = (
@@ -193,9 +193,9 @@ export function MaccabiBanner() {
     </div>
   );
   return (
-    <div className="mx-auto max-w-5xl px-3">
+    <div className={docked ? "w-full" : "mx-auto max-w-5xl px-3"}>
       <div
-        className="banner-bg relative -mt-6 overflow-hidden rounded-[22px] border border-gold/70 py-3 shadow-[0_18px_40px_-18px_rgba(19,48,110,0.75)]"
+        className={`banner-bg relative ${docked ? "" : "-mt-6"} overflow-hidden rounded-[22px] border border-gold/70 py-3 shadow-[0_18px_40px_-18px_rgba(19,48,110,0.75)]`}
         aria-label="רק מכבי"
         role="img"
       >
