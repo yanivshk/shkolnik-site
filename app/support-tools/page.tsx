@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SubPage, ToolGroups } from "@/components/subpage";
+import { SubPage, ToolGroups, type ToolGroup } from "@/components/subpage";
 
 export const metadata: Metadata = {
   title: "כלי תמיכה — השתלטות מרחוק בחינם",
@@ -7,8 +7,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "/support-tools" },
 };
 
-const GROUPS = [
+const GROUPS: ToolGroup[] = [
   {
+    id: "remote",
+    icon: "remote",
     title: "השתלטות מרחוק",
     tools: [
       { name: "Quick Assist (Windows)", url: "https://support.microsoft.com/en-us/windows/apps/solve-pc-problems-remotely-using-quick-assist", note: "מובנה ב-Windows 10/11. חיפוש \"Quick Assist\" בתפריט התחל. חינם." },
@@ -23,7 +25,12 @@ const GROUPS = [
 
 export default function Page() {
   return (
-    <SubPage title="כלי תמיכה" subtitle="כלים חינמיים להשתלטות מרחוק על מחשבים" eyebrow="Remote Support">
+    <SubPage
+      title="כלי תמיכה"
+      subtitle="כלים חינמיים להשתלטות מרחוק על מחשבים"
+      eyebrow="Remote Support"
+      stats={[`${GROUPS[0].tools.length} כלים`, "חינם", "Windows · Mac · נייד"]}
+    >
       <div className="mb-6 rounded-[var(--radius-card)] border border-gold bg-gold-soft/60 p-4 text-[14px] leading-6 text-ink">
         <strong>חשוב:</strong> לתת גישה מרחוק רק למי שאתם מכירים וסומכים עליו. אף גוף רשמי (בנק, חברת תקשורת, מיקרוסופט) לא יתקשר ויבקש להתחבר למחשב שלכם.
       </div>
