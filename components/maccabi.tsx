@@ -213,3 +213,29 @@ export function MaccabiBanner() {
     </div>
   );
 }
+
+/** פס "רק מכבי" קומפקטי שרץ קבוע בתחתית המסך, מעל כפתורי הניווט */
+export function MaccabiTicker() {
+  const items = Array.from({ length: 8 });
+  const row = (
+    <div className="flex shrink-0 items-center gap-5 pe-5">
+      {items.map((_, i) => (
+        <span key={i} className="flex items-center gap-5">
+          <span className={`text-[14px] font-black leading-none ${i % 2 ? "text-white" : "text-gold"}`}>רק מכבי</span>
+          {i % 2 ? <RealSoccerBall id={`tk-s${i}`} className="h-4 w-4" /> : <RealBasketball id={`tk-b${i}`} className="h-4 w-4" />}
+        </span>
+      ))}
+    </div>
+  );
+  return (
+    <div className="banner-bg relative mx-auto w-full max-w-md overflow-hidden rounded-full border border-gold/70 py-1.5 shadow-[0_12px_28px_-14px_rgba(19,48,110,0.7)]" role="img" aria-label="רק מכבי">
+      <span className="banner-shine pointer-events-none absolute inset-y-0 w-1/3" aria-hidden />
+      <div dir="ltr" className="banner-fade ps-9">
+        <div dir="ltr" className="marquee flex w-max">{row}{row}</div>
+      </div>
+      <span className="absolute inset-y-0 left-0 flex items-center ps-1" aria-hidden>
+        <MaccabiLogo className="h-7 w-7" />
+      </span>
+    </div>
+  );
+}

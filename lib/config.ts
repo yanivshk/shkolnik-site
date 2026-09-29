@@ -8,6 +8,7 @@ export const OWNER_NAME = "יניב";
 export const INDICES = [
   { symbol: "TA35.TA", name: 'ת"א-35' },
   { symbol: "^TA125.TA", name: 'ת"א-125' },
+  { symbol: "TA90.TA", name: 'ת"א-90' },
   { symbol: "^GSPC", name: "S&P 500" },
   { symbol: "^IXIC", name: 'נאסד"ק' },
 ];
@@ -16,7 +17,12 @@ export const STOCKS = [
   { symbol: "NVDA", name: "Nvidia" },
   { symbol: "MSFT", name: "Microsoft" },
   { symbol: "GOOGL", name: "Alphabet" },
+  { symbol: "AMD", name: "AMD" },
+  { symbol: "INTC", name: "Intel" },
+  { symbol: "SMH", name: "SMH · שבבים" },
+  { symbol: "DRAM", name: "DRAM · זיכרון" },
   { symbol: "ESLT.TA", name: "אלביט" },
+  { symbol: "DSIT.TA", name: "DSIT" },
   { symbol: "ILS=X", name: "דולר/שקל" },
   { symbol: "BTC-USD", name: "ביטקוין" },
 ];
@@ -61,6 +67,18 @@ export const REVALIDATE = {
 };
 
 export const TZ = "Asia/Jerusalem";
+
+/** שעוני עולם (שורה אחת בראש העמוד) — קיצור באנגלית + אזור זמן */
+export const WORLD_CLOCKS = [
+  { label: "IND", tz: "Asia/Kolkata" },
+  { label: "SGP", tz: "Asia/Singapore" },
+  { label: "BKK", tz: "Asia/Bangkok" },
+  { label: "LDN", tz: "Europe/London" },
+  { label: "NYC", tz: "America/New_York" },
+];
+
+/** תמונת טסלה יומית — חיפוש בתמונות "Quality images" של ויקימדיה קומונס */
+export const TESLA_PHOTO_SEARCH = "intitle:Tesla incategory:Quality_images";
 
 /** כתובת האתר הקנונית (לצורכי SEO) ופרטי קשר */
 export const SITE_URL = process.env.SITE_URL || "https://www.shkolnik.co.il";

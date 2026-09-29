@@ -1,12 +1,12 @@
-import { CONTACT_EMAIL, OWNER_FULL_NAME, OWNER_NAME } from "@/lib/config";
+import { CONTACT_EMAIL, OWNER_FULL_NAME, OWNER_NAME, WORLD_CLOCKS } from "@/lib/config";
 import { getAINews, getGames, getMarkets, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
 import { formatPct, hebrewDate } from "@/lib/format";
 import type { Quote } from "@/lib/types";
-import { BottomNav, Clock, Greeting } from "@/components/client";
+import { BottomNav, Clock, Greeting, WorldClocks } from "@/components/client";
 import { WeatherBar } from "@/components/weather";
 import { DEFAULT_PLACE, getWeather } from "@/lib/weather";
 import { Empty, GameCard, NewsCarousel, NewsList, QuoteTile, Section } from "@/components/ui";
-import { MaccabiBanner, MaccabiDivider, MaccabiLogo, RakMaccabi, RealBasketball, RealSoccerBall } from "@/components/maccabi";
+import { MaccabiDivider, MaccabiLogo, MaccabiTicker, RakMaccabi, RealBasketball, RealSoccerBall } from "@/components/maccabi";
 
 export const revalidate = 300;
 
@@ -20,12 +20,21 @@ function PulseChip({ q }: { q: Quote }) {
   );
 }
 
+function PhotoLink({ href, label }: { href: string; label: string }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="glass press flex items-center justify-center gap-2 rounded-2xl px-3 py-3 text-[13px] font-semibold text-royal">
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 16 5-5 4 4 3-3 6 6" /><circle cx="16" cy="9" r="1.5" /></svg>
+      {label}
+    </a>
+  );
+}
+
 export default async function Home() {
   const [markets, tsla, teslaNews, games, sportsNews, aiNews, weather] = await Promise.all([
     getMarkets(), getTeslaQuote(), getTeslaNews(), getGames(), getSportsNews(), getAINews(), getWeather(DEFAULT_PLACE.lat, DEFAULT_PLACE.lon, DEFAULT_PLACE.name),
   ]);
 
-  const pulse = [markets.indices[0], markets.indices[2], tsla].filter(Boolean) as Quote[];
+  const pulse = [markets.indices.find((q) => q.symbol === "TA35.TA"), markets.indices.find((q) => q.symbol === "^GSPC"), tsla].filter(Boolean) as Quote[];
 
   return (
     <>
@@ -50,60 +59,38 @@ export default async function Home() {
         </div>
       </header>
 
-      <main id="top" className="pb-36">
-        {/* Hero — כחול מכבי עם פסים צהובים */}
-        <section className="relative isolate flex min-h-[70svh] items-end overflow-hidden rounded-b-[32px] bg-gradient-to-br from-navy via-royal to-royal-2 text-white" aria-label="פתיחה">
+      <main id="top" style={{ paddingBottom: "calc(150px + var(--safe-bottom))" }}>
+        {/* Hero — כחול מכבי עם פסים צהובים. התוכן מתחיל מיד מתחת לכותרת, בלי שטח ריק */}
+        <section className="relative isolate overflow-hidden rounded-b-[28px] bg-gradient-to-br from-navy via-royal to-royal-2 text-white" aria-label="פתיחה">
           <div className="maccabi-stripes absolute inset-0 -z-10" />
           <div className="absolute -left-24 -top-24 -z-10 h-72 w-72 rounded-full bg-gold/30 blur-3xl" />
-          <span className="pointer-events-none absolute -left-6 top-24 -z-10 hidden -rotate-12 select-none sm:block text-[120px] font-black leading-none text-transparent [-webkit-text-stroke:1.5px_rgba(255,210,63,0.22)] sm:text-[180px]" aria-hidden>
-            רק מכבי
-          </span>
-          <RealBasketball id="hero-b" className="absolute -left-10 top-[58%] -z-10 h-20 w-20 -rotate-12 sm:-left-8 sm:top-[44%] sm:h-28 sm:w-28 opacity-90 drop-shadow-[0_14px_20px_rgba(0,0,0,0.35)]" />
-          <RealSoccerBall id="hero-s" className="absolute right-[42%] top-20 -z-10 h-12 w-12 rotate-12 opacity-90 drop-shadow-[0_10px_14px_rgba(0,0,0,0.35)] sm:top-28" />
-          <MaccabiLogo className="absolute left-4 top-24 h-14 w-14 drop-shadow-[0_6px_14px_rgba(0,0,0,0.35)]" />
 
-          <div className="mx-auto w-full max-w-5xl px-5 pb-10 pt-32">
+          <div className="mx-auto w-full max-w-5xl px-4 pb-6" style={{ paddingTop: "calc(84px + env(safe-area-inset-top, 0px))" }}>
             <p className="mb-3 flex items-center gap-2 text-[12px] font-medium text-white/80">
               <span className="h-0.5 w-8 rounded-full bg-gold" />
               {hebrewDate()}
             </p>
+            <WorldClocks clocks={WORLD_CLOCKS} />
             <WeatherBar initial={weather} />
-            <h1 className="max-w-[14ch] text-[44px] font-black leading-[1.05] tracking-tight sm:text-6xl">
+            <h1 className="text-[36px] font-black leading-[1.05] tracking-tight sm:text-6xl">
               <Greeting name={OWNER_NAME} />
             </h1>
-            <p className="mt-4 max-w-sm text-[15px] leading-relaxed text-white/80">
+            <p className="mt-2 max-w-sm text-[14px] leading-relaxed text-white/80">
               השווקים, טסלה, הספורט וה-AI שחשובים לך — מתעדכנים לבד, במקום אחד.
-            </p>
-            <p className="mt-3 flex items-center gap-2 text-[14px] font-black text-gold">
-              <RealSoccerBall id="sl-s" className="h-5 w-5" /> רק מכבי. תמיד. <RealBasketball id="sl-b" className="h-5 w-5" />
             </p>
 
             {pulse.length > 0 && (
-              <div className="mt-6 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-2">
                 {pulse.map((q) => <PulseChip key={q.symbol} q={q} />)}
               </div>
             )}
-
-            <div className="mt-7 flex flex-wrap items-center gap-3">
-              <a
-                href="/photo"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="press inline-flex items-center gap-2 rounded-full border border-gold bg-gold px-5 py-3 text-[14px] font-bold text-navy shadow-[0_10px_24px_-10px_rgba(255,210,63,0.6)]"
-              >
-                לתמונה היומית
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 16 5-5 4 4 3-3 6 6" /><circle cx="16" cy="9" r="1.5" /></svg>
-              </a>
-            </div>
           </div>
         </section>
-
-        <MaccabiBanner />
 
         {/* שווקים */}
         <Section id="markets" eyebrow="Markets" title="שווקים">
           {markets.indices.length ? (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
               {markets.indices.map((q) => <QuoteTile key={q.symbol} q={q} showCurrency={false} />)}
             </div>
           ) : <Empty />}
@@ -143,6 +130,14 @@ export default async function Home() {
           <NewsCarousel items={aiNews.slice(0, 5)} />
           <div className="mt-4"><NewsList items={aiNews.slice(5, 12)} /></div>
         </Section>
+
+        {/* תמונות יומיות — מקום משני בעמוד */}
+        <section className="mx-auto w-full max-w-5xl px-4 pt-10" aria-label="תמונות יומיות">
+          <div className="grid grid-cols-2 gap-3">
+            <PhotoLink href="/photo" label="תמונה יומית" />
+            <PhotoLink href="/tesla-photo" label="טסלה" />
+          </div>
+        </section>
 
         {/* על יניב שקולניק */}
         <section id="about" className="reveal mx-auto w-full max-w-5xl px-4 pt-12" aria-labelledby="about-title">
@@ -191,7 +186,11 @@ export default async function Home() {
         </footer>
       </main>
 
-      <BottomNav />
+      {/* תחתית קבועה: הבאנר רץ, ומתחתיו כפתורי הניווט */}
+      <div className="fixed inset-x-3 z-50 mx-auto flex max-w-md flex-col gap-2" style={{ bottom: "calc(10px + var(--safe-bottom))" }}>
+        <MaccabiTicker />
+        <BottomNav />
+      </div>
     </>
   );
 }
