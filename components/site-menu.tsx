@@ -4,14 +4,13 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 export const MENU = [
-  { href: "/", label: "בית" },
+  { href: "/ai-tools", label: "כלי AI" },
+  { href: "/support-tools", label: "כלי תמיכה" },
+  { href: "/articles", label: "מאמרים" },
   { href: "/yaniv-shkolnik", label: "יניב שקולניק" },
   { href: "/tomer-shkolnik", label: "תומר שקולניק" },
   { href: "/guy-shkolnik", label: "גיא שקולניק" },
   { href: "/noa-shkolnik", label: "נועה שקולניק" },
-  { href: "/articles", label: "מאמרים" },
-  { href: "/ai-tools", label: "כלי AI" },
-  { href: "/support-tools", label: "כלי תמיכה" },
 ];
 
 /** כפתור תפריט (☰) שפותח מגירת ניווט */
@@ -56,6 +55,9 @@ export function SiteMenu() {
                 {m.label}
               </a>
             ))}
+            <a href="/" onClick={() => setOpen(false)} className="mt-3 border-t border-line px-3 pt-4 text-[14px] font-semibold text-muted hover:text-royal">
+              ← לעמוד הבית
+            </a>
           </nav>
         </div>,
         document.body,
