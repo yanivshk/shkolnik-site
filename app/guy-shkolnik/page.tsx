@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SITE_URL } from "@/lib/config";
+import { SEARCH_SNIPPET, SITE_URL } from "@/lib/config";
 import { ProfileArticle } from "@/components/subpage";
 
 const NAME = "גיא שקולניק";
@@ -9,10 +9,11 @@ const DESCRIPTION = "גיא שקולניק (Guy Shkolnik) הוא שחקן דומ
 const URL = `${SITE_URL}/guy-shkolnik`;
 
 export const metadata: Metadata = {
-  title: { absolute: `${NAME} | ${NAME_EN} — ${HEADLINE}` },
-  description: DESCRIPTION,
+  // תוצאת החיפוש בגוגל: השם בכותרת, והמשפט "מה זה הפועל?" בתיאור
+  title: { absolute: NAME },
+  description: SEARCH_SNIPPET,
   alternates: { canonical: "/guy-shkolnik" },
-  openGraph: { type: "profile", title: `${NAME} — ${HEADLINE}`, description: DESCRIPTION, url: URL, locale: "he_IL" },
+  openGraph: { type: "profile", title: NAME, description: SEARCH_SNIPPET, url: URL, locale: "he_IL" },
 };
 
 const jsonLd = {
