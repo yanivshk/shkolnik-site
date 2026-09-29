@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SubPage, ToolGroups } from "@/components/subpage";
+import { SubPage, ToolGroups, type ToolGroup } from "@/components/subpage";
 
 export const metadata: Metadata = {
   title: "כלי AI חינמיים מומלצים",
@@ -7,8 +7,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "/ai-tools" },
 };
 
-const GROUPS = [
+const GROUPS: ToolGroup[] = [
   {
+    id: "llm",
+    icon: "chat",
     title: "מודלי שפה וצ'אט",
     tools: [
       { name: "ChatGPT", url: "https://chatgpt.com", note: "העוזר הפופולרי של OpenAI. כתיבה, שאלות, סיכומים וקוד." },
@@ -21,6 +23,8 @@ const GROUPS = [
     ],
   },
   {
+    id: "images",
+    icon: "image",
     title: "תמונות וגרפיקה",
     tools: [
       { name: "Gemini (יצירת תמונות)", url: "https://gemini.google.com", note: "יצירה ועריכה של תמונות מתיאור טקסט." },
@@ -33,6 +37,8 @@ const GROUPS = [
     ],
   },
   {
+    id: "video",
+    icon: "video",
     title: "וידאו",
     tools: [
       { name: "CapCut", url: "https://www.capcut.com", note: "עריכת וידאו עם כתוביות אוטומטיות ואפקטים מבוססי AI." },
@@ -44,6 +50,8 @@ const GROUPS = [
     ],
   },
   {
+    id: "data",
+    icon: "data",
     title: "ניתוח נתונים ומחקר",
     tools: [
       { name: "NotebookLM", url: "https://notebooklm.google.com", note: "מעלים מסמכים ומקבלים סיכומים, תשובות עם מקורות ופודקאסט." },
@@ -58,7 +66,12 @@ const GROUPS = [
 
 export default function Page() {
   return (
-    <SubPage title="כלי AI" subtitle="הכלים החינמיים הטובים ביותר, לפי קטגוריות" eyebrow="AI Tools">
+    <SubPage
+      title="כלי AI"
+      subtitle="הכלים החינמיים הטובים ביותר, לפי קטגוריות"
+      eyebrow="AI Tools"
+      stats={[`${GROUPS.reduce((n, g) => n + g.tools.length, 0)} כלים`, `${GROUPS.length} קטגוריות`, "גרסאות חינמיות"]}
+    >
       <ToolGroups groups={GROUPS} />
       <p className="mt-8 text-[13px] leading-6 text-faint">
         רוב הכלים מציעים גרסה חינמית עם מגבלות שימוש. הקישורים מובילים לאתרים הרשמיים. מומלץ לא להעלות לכלים ציבוריים מידע רגיש או מסווג.
