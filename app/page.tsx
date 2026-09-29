@@ -3,6 +3,7 @@ import { getAINews, getGames, getMarkets, getSportsNews, getTeslaNews, getTeslaQ
 import { formatPct, hebrewDate } from "@/lib/format";
 import type { Quote } from "@/lib/types";
 import { BottomNav, Clock, Greeting, WorldClocks } from "@/components/client";
+import { SiteMenu } from "@/components/site-menu";
 import { WeatherBar } from "@/components/weather";
 import { DEFAULT_PLACE, getWeather } from "@/lib/weather";
 import { Empty, GameCard, NewsCarousel, NewsList, QuoteTile, Section } from "@/components/ui";
@@ -56,6 +57,7 @@ export default async function Home() {
             <span className="hidden text-[12px] text-muted sm:inline">{hebrewDate()}</span>
             <span className="h-4 w-px bg-line" />
             <Clock />
+            <SiteMenu />
           </div>
         </div>
       </header>

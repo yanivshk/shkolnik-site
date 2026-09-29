@@ -38,7 +38,7 @@ const personJsonLd = {
       url: SITE_URL,
       jobTitle: "מדען, חוקר גידולי חסה בשטח",
       knowsAbout: ["גידול חסה", "חקלאות שדה", "גידול עגבניות"],
-      mainEntityOfPage: `${SITE_URL}/yaniv-shkolnik`,
+      mainEntityOfPage: SITE_URL,
     },
     {
       "@type": "WebSite",
