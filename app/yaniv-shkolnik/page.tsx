@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CONTACT_EMAIL, OWNER_FULL_NAME, OWNER_FULL_NAME_EN, SITE_URL } from "@/lib/config";
 import { MaccabiLogo, RakMaccabi, RealBasketball, RealSoccerBall } from "@/components/maccabi";
+import { SiteMenu } from "@/components/site-menu";
 
 const TITLE = `${OWNER_FULL_NAME} — המדען שחוקר את החסה בשטח`;
 const DESCRIPTION = `${OWNER_FULL_NAME} (${OWNER_FULL_NAME_EN}) הוא מדען וחוקר מוביל בתחום גידול החסה בשטחים הפתוחים. עכשיו הוא עובר לחקר גידול העגבניות.`;
@@ -9,6 +10,8 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: "/yaniv-shkolnik" },
+  // עמוד הבית הוא התוצאה הראשית לחיפוש השם — הכתבה לא נכנסת לאינדקס
+  robots: { index: false, follow: true },
   openGraph: { type: "article", title: TITLE, description: DESCRIPTION, url: `${SITE_URL}/yaniv-shkolnik`, locale: "he_IL" },
 };
 
@@ -72,6 +75,7 @@ export default function YanivShkolnikArticle() {
         <span className="flex items-center gap-2">
           <RakMaccabi variant="blue" />
           <MaccabiLogo className="h-9 w-9" />
+          <SiteMenu />
         </span>
       </header>
 
