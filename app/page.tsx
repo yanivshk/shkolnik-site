@@ -6,7 +6,7 @@ import { BottomNav, Clock, Greeting, WorldClocks } from "@/components/client";
 import { WeatherBar } from "@/components/weather";
 import { DEFAULT_PLACE, getWeather } from "@/lib/weather";
 import { Empty, GameCard, NewsCarousel, NewsList, QuoteTile, Section } from "@/components/ui";
-import { MaccabiBanner, MaccabiDivider, MaccabiLogo, RakMaccabi, RealBasketball, RealSoccerBall } from "@/components/maccabi";
+import { BallsBackdrop, MaccabiBanner, MaccabiDivider, MaccabiLogo, RakMaccabi, RealBasketball, RealSoccerBall } from "@/components/maccabi";
 
 export const revalidate = 300;
 
@@ -38,6 +38,7 @@ export default async function Home() {
 
   return (
     <>
+      <BallsBackdrop />
       {/* Header — זכוכית צפה */}
       <header className="fixed inset-x-3 top-3 z-50 mx-auto max-w-5xl" style={{ top: "calc(10px + env(safe-area-inset-top, 0px))" }}>
         <div className="glass-strong flex items-center justify-between rounded-2xl px-4 py-2.5">
