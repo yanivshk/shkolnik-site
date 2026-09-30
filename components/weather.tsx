@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { DEFAULT_PLACE, type Place, type Weather } from "@/lib/weather";
 
 const STORE_KEY = "weather-place";
@@ -46,12 +47,15 @@ function condition(code: number, isDay: boolean): { d: string; label: string } {
   return { d: RAIN, label: "גשם" };
 }
 
-function Chip({ icon, children, label }: { icon: string; children: React.ReactNode; label: string }) {
+/** קישור לגוגל — מזג אוויר / לחות / סיכוי לגשם ביישוב שנבחר */
+const googleWeather = (query: string) => `https://www.google.com/search?hl=he&q=${encodeURIComponent(query)}`;
+
+function Chip({ icon, children, label, href }: { icon: string; children: React.ReactNode; label: string; href: string }) {
   return (
-    <span className="glass inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold text-ink" title={label} aria-label={label}>
+    <a href={href} target="_blank" rel="noopener noreferrer" className="glass press inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold text-ink" title={label} aria-label={label}>
       <I d={icon} className="h-3.5 w-3.5 text-royal" />
       <span dir="ltr" className="tabular">{children}</span>
-    </span>
+    </a>
   );
 }
 
@@ -60,7 +64,11 @@ export function WeatherBar({ initial }: { initial: Weather | null }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Place[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
   const placeRef = useRef<Place | null>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
 
   async function load(p: Place) {
     try {
@@ -77,35 +85,78 @@ export function WeatherBar({ initial }: { initial: Weather | null }) {
     return () => clearInterval(id);
   }, []);
 
+  async function search(text: string): Promise<Place[]> {
+    try {
+      const r = await fetch(`/api/places?q=${encodeURIComponent(text)}`);
+      return r.ok ? ((await r.json()) as Place[]) : [];
+    } catch { return []; }
+  }
+
   useEffect(() => {
     if (q.trim().length < 2) { setResults([]); return; }
+    let live = true;
     const t = setTimeout(async () => {
-      try {
-        const r = await fetch(`/api/places?q=${encodeURIComponent(q.trim())}`);
-        setResults(r.ok ? await r.json() : []);
-      } catch { setResults([]); }
+      const list = await search(q.trim());
+      if (live) setResults(list);
     }, 300);
-    return () => clearTimeout(t);
+    return () => { live = false; clearTimeout(t); };
   }, [q]);
 
-  function choose(p: Place) {
+  async function choose(p: Place) {
     placeRef.current = p;
     savePlace(p);
     setOpen(false);
     setQ("");
     setResults([]);
-    load(p);
+    setBusy(true);
+    await load(p);
+    setBusy(false);
   }
+
+  /** Enter — אישור: בוחר את התוצאה הראשונה (ומחפש מיד אם עוד לא הגיעו תוצאות) */
+  async function confirm() {
+    const text = q.trim();
+    if (text.length < 2) return;
+    const list = results.length ? results : await search(text);
+    if (list[0]) choose(list[0]);
+    else setResults([]);
+  }
+
+  // החלונית מוצגת מחוץ לאזור הכחול (portal), כדי שלא תיחתך ותהיה לחיצה
+  const place = useCallback(() => {
+    const r = barRef.current?.getBoundingClientRect();
+    if (r) setPos({ top: r.bottom + 8, right: window.innerWidth - r.right });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    place();
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!popRef.current?.contains(t) && !barRef.current?.contains(t)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, { passive: true });
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place);
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, place]);
 
   if (!w) return null;
   const c = condition(w.code, w.isDay);
 
   return (
     <div className="relative mb-3">
-      <div className="flex flex-wrap items-center gap-1.5">
-        <Chip icon={c.d} label={`${c.label}, ${w.temp} מעלות`}>{w.temp}°</Chip>
-        <Chip icon={DROP} label={`לחות ${w.humidity}%`}>{w.humidity}%</Chip>
-        <Chip icon={UMBRELLA} label={`סיכוי לגשם ${w.rainProb}%`}>{w.rainProb}%</Chip>
+      <div ref={barRef} className="flex flex-wrap items-center gap-1.5" aria-busy={busy}>
+        <Chip icon={c.d} label={`${c.label}, ${w.temp} מעלות — מזג האוויר ב${w.name} בגוגל`} href={googleWeather(`מזג אוויר ${w.name}`)}>{w.temp}°</Chip>
+        <Chip icon={DROP} label={`לחות ${w.humidity}% — לחות ב${w.name} בגוגל`} href={googleWeather(`לחות ${w.name}`)}>{w.humidity}%</Chip>
+        <Chip icon={UMBRELLA} label={`סיכוי לגשם ${w.rainProb}% — סיכוי לגשם ב${w.name} בגוגל`} href={googleWeather(`סיכוי לגשם ${w.name}`)}>{w.rainProb}%</Chip>
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -119,14 +170,21 @@ export function WeatherBar({ initial }: { initial: Weather | null }) {
         </button>
       </div>
 
-      {open && (
-        <div className="glass-strong absolute z-30 mt-2 w-[min(92vw,300px)] rounded-2xl p-3 text-ink shadow-xl">
+      {open && pos && createPortal(
+        <div
+          ref={popRef}
+          className="glass-strong fixed z-[70] w-[min(92vw,300px)] !bg-white/95 rounded-2xl p-3 text-ink shadow-xl"
+          style={{ top: pos.top, right: pos.right }}
+          dir="rtl"
+        >
           <label className="mb-2 block text-[12px] font-semibold text-muted" htmlFor="wx-q">בחירת מיקום</label>
           <input
             id="wx-q"
             autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirm(); } }}
+            enterKeyHint="search"
             placeholder="למשל: חיפה"
             className="w-full rounded-xl border border-line bg-white px-3 py-2 text-[14px] outline-none focus:border-royal"
           />
@@ -140,7 +198,8 @@ export function WeatherBar({ initial }: { initial: Weather | null }) {
               </li>
             ))}
           </ul>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
