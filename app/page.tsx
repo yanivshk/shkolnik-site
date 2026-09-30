@@ -1,5 +1,5 @@
-import { CONTACT_EMAIL, OWNER_FULL_NAME, OWNER_NAME, WORLD_CLOCKS } from "@/lib/config";
-import { getAINews, getGames, getMarkets, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
+import { CONTACT_EMAIL, MARKETS_TOP_ORDER, OWNER_FULL_NAME, OWNER_NAME, STOCKS, WORLD_CLOCKS } from "@/lib/config";
+import { getAINews, getGames, getIsraelNews, getMarkets, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
 import { formatPct, hebrewDate } from "@/lib/format";
 import type { Quote } from "@/lib/types";
 import { BottomNav, Clock, Greeting, WorldClocks } from "@/components/client";
@@ -11,11 +11,14 @@ import { BallsBackdrop, MaccabiBanner, MaccabiDivider, MaccabiLogo, RakMaccabi, 
 
 export const revalidate = 300;
 
+/** שמות מקוצרים לשורת המדדים שמתחת לברכה — כדי ש-4 מדדים ייכנסו בשורה אחת */
+const PULSE_SHORT: Record<string, string> = { "TA35.TA": 'ת"א 35', "^GSPC": "S&P", "^IXIC": 'נאסד"ק', TSLA: "טסלה" };
+
 function PulseChip({ q }: { q: Quote }) {
   const up = q.changePct >= 0;
   return (
-    <span className="glass inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px]">
-      <span className="font-semibold">{q.name}</span>
+    <span className="glass inline-flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-full px-1.5 py-1.5 text-[11px]">
+      <span className="font-semibold">{PULSE_SHORT[q.symbol] ?? q.name}</span>
       <span dir="ltr" className={`tabular font-bold ${up ? "text-up" : "text-down"}`}>{formatPct(q.changePct)}</span>
     </span>
   );
@@ -31,11 +34,18 @@ function PhotoLink({ href, label }: { href: string; label: string }) {
 }
 
 export default async function Home() {
-  const [markets, tsla, teslaNews, games, sportsNews, aiNews, weather] = await Promise.all([
-    getMarkets(), getTeslaQuote(), getTeslaNews(), getGames(), getSportsNews(), getAINews(), getWeather(DEFAULT_PLACE.lat, DEFAULT_PLACE.lon, DEFAULT_PLACE.name),
+  const [markets, tsla, teslaNews, games, sportsNews, aiNews, news, weather] = await Promise.all([
+    getMarkets(), getTeslaQuote(), getTeslaNews(), getGames(), getSportsNews(), getAINews(), getIsraelNews(), getWeather(DEFAULT_PLACE.lat, DEFAULT_PLACE.lon, DEFAULT_PLACE.name),
   ]);
 
-  const pulse = [markets.indices.find((q) => q.symbol === "TA35.TA"), markets.indices.find((q) => q.symbol === "^GSPC"), tsla].filter(Boolean) as Quote[];
+  const idx = (s: string) => markets.indices.find((q) => q.symbol === s);
+  const pulse = [idx("TA35.TA"), idx("^GSPC"), idx("^IXIC"), tsla].filter(Boolean) as Quote[];
+
+  // סדר המניות: DSIT, ת"א-35, ת"א-125, נאסד"ק, S&P 500, ת"א-90 — ואז כל השאר
+  const allQuotes = [...markets.indices, ...markets.stocks];
+  const topQuotes = MARKETS_TOP_ORDER.map((s) => allQuotes.find((q) => q.symbol === s)).filter(Boolean) as Quote[];
+  const restQuotes = allQuotes.filter((q) => !MARKETS_TOP_ORDER.includes(q.symbol));
+  const isStock = (s: string) => STOCKS.some((x) => x.symbol === s);
 
   return (
     <>
@@ -80,7 +90,7 @@ export default async function Home() {
             </h1>
 
             {pulse.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-3 grid max-w-md grid-cols-4 gap-1.5">
                 {pulse.map((q) => <PulseChip key={q.symbol} q={q} />)}
               </div>
             )}
@@ -89,28 +99,20 @@ export default async function Home() {
 
         {/* שווקים */}
         <Section id="markets" eyebrow="Markets" title="מניות ומדדים" tight>
-          {markets.indices.length ? (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-              {markets.indices.map((q) => <QuoteTile key={q.symbol} q={q} showCurrency={false} />)}
+          {topQuotes.length ? (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+              {topQuotes.map((q) => <QuoteTile key={q.symbol} q={q} showCurrency={isStock(q.symbol)} />)}
             </div>
           ) : <Empty />}
           <h3 className="mb-3 mt-7 text-[13px] font-semibold text-muted">במעקב</h3>
-          {markets.stocks.length ? (
+          {restQuotes.length ? (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-              {markets.stocks.map((q) => <QuoteTile key={q.symbol} q={q} />)}
+              {restQuotes.map((q) => <QuoteTile key={q.symbol} q={q} showCurrency={isStock(q.symbol)} />)}
             </div>
           ) : <Empty />}
         </Section>
 
         <MaccabiDivider />
-
-        {/* טסלה */}
-        <Section id="tesla" eyebrow="Tesla" title="טסלה">
-          <div className="grid gap-3 md:grid-cols-[1fr_1.3fr]">
-            <div className="grid grid-cols-2">{tsla ? <QuoteTile q={tsla} featured /> : <div className="col-span-2"><Empty /></div>}</div>
-            <NewsList items={teslaNews.slice(0, 6)} />
-          </div>
-        </Section>
 
         {/* ספורט */}
         <Section id="sports" eyebrow="Sports · רק מכבי" title="ספורט" action={<span className="flex items-center gap-2"><RealSoccerBall id="sp-s" className="h-7 w-7" /><MaccabiLogo className="h-8 w-8" /><RealBasketball id="sp-b" className="h-7 w-7" /></span>}>
@@ -121,6 +123,19 @@ export default async function Home() {
           ) : <Empty text="אין משחקים במחזור הקרוב" />}
           <h3 className="mb-3 mt-7 text-[13px] font-semibold text-muted">כותרות</h3>
           <NewsList items={sportsNews} showSource={false} />
+        </Section>
+
+        {/* חדשות — הידיעות החמות מאתרי החדשות המובילים בישראל */}
+        <Section id="news" eyebrow="News · ישראל" title="חדשות">
+          <NewsList items={news} />
+        </Section>
+
+        {/* טסלה */}
+        <Section id="tesla" eyebrow="Tesla" title="טסלה">
+          <div className="grid gap-3 md:grid-cols-[1fr_1.3fr]">
+            <div className="grid grid-cols-2">{tsla ? <QuoteTile q={tsla} featured /> : <div className="col-span-2"><Empty /></div>}</div>
+            <NewsList items={teslaNews.slice(0, 6)} />
+          </div>
         </Section>
 
         <MaccabiDivider flip />
