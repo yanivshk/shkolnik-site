@@ -49,6 +49,19 @@ export const sportsNews = (): NewsItem[] => [
   { title: "יורוליג: סיכום המחזור השני", link: "#", source: "ynet ספורט", date: ago(12) },
 ];
 
+export const israelNews = (): NewsItem[] => [
+  { title: "הקבינט יתכנס הערב לדיון דחוף בעקבות ההתפתחויות בצפון", link: "#", source: "ynet ועוד 4", date: ago(0.5), highlight: true },
+  { title: "בנק ישראל הותיר את הריבית ללא שינוי", link: "#", source: "N12 ועוד 3", date: ago(1), highlight: true },
+  { title: "סערה ראשונה של העונה: גשם וסכנת שיטפונות בדרום", link: "#", source: "וואלה ועוד 2", date: ago(2) },
+  { title: "הכנסת אישרה בקריאה ראשונה את חוק התקציב", link: "#", source: "ישראל היום ועוד 1", date: ago(2.5) },
+  { title: "עומסים כבדים בנתב\"ג לקראת סוף החגים", link: "#", source: "ynet", date: ago(3) },
+  { title: "מחקר ישראלי: פריצת דרך בזיהוי מוקדם של מחלות לב", link: "#", source: "מעריב", date: ago(4) },
+  { title: "משרד התחבורה חושף: הקו הסגול ייפתח בשלבים", link: "#", source: "N12", date: ago(5) },
+  { title: "המדד המחירים לצרכן עלה ב־0.3% בחודש האחרון", link: "#", source: "הארץ", date: ago(6) },
+  { title: "חברת סייבר ישראלית נרכשה ב־1.2 מיליארד דולר", link: "#", source: "וואלה", date: ago(7) },
+  { title: "תחזית: התחממות קלה בסוף השבוע", link: "#", source: "ישראל היום", date: ago(9) },
+];
+
 export const games = (): Game[] => [
   { id: "1", league: "ליגה אירופית", date: new Date(Date.now() + 26 * 3600e3).toISOString(), status: "Thu 19:45", state: "pre", highlight: true,
     home: { name: "Maccabi Tel-Aviv", short: "MTA", score: "" }, away: { name: "Lyon", short: "LYO", score: "" } },

@@ -1,7 +1,7 @@
 import "server-only";
 import { XMLParser } from "fast-xml-parser";
 import {
-  AI_FEEDS, HIGHLIGHT_KEYWORDS, HIGHLIGHT_TEAMS, INDICES, REVALIDATE,
+  AI_FEEDS, HIGHLIGHT_KEYWORDS, ISRAEL_NEWS_FEEDS, NEWS_LIMIT, HIGHLIGHT_TEAMS, INDICES, REVALIDATE,
   SPORTS_LEAGUES, SPORTS_NEWS_FEEDS, STOCKS, TESLA_FEEDS, TESLA_PHOTO_SEARCH, TESLA_SYMBOL, TZ,
 } from "./config";
 import type { DailyPhoto, Game, NewsItem, Quote } from "./types";
@@ -178,6 +178,65 @@ export async function getSportsNews() {
     .map((n) => ({ ...n, highlight: HIGHLIGHT_KEYWORDS.some((k) => n.title.includes(k)) }))
     .sort((a, b) => Number(b.highlight) - Number(a.highlight))
     .slice(0, 6);
+}
+
+/* ---------------- חדשות — הידיעות החמות מאתרי החדשות המובילים בישראל ---------------- */
+
+const STOP = new Set(["של", "על", "את", "עם", "לא", "זה", "גם", "כל", "אחרי", "אחד", "אחת", "היא", "הוא", "מול", "בין", "לפני", "יותר", "רק", "כך", "כי", "אם", "אבל", "עוד", "שלא", "אנחנו", "הם", "זו", "יש", "אין", "היום", "צפו", "תיעוד", "דיווח"]);
+
+/** מילות מפתח מכותרת: בלי ניקוד/פיסוק, בלי מילות קישור, ובלי אות שימוש בתחילת מילה ארוכה */
+function keywords(title: string): Set<string> {
+  return new Set(
+    title.replace(/[\u0591-\u05C7]/g, "").replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/)
+      .filter((w) => w.length >= 2 && !STOP.has(w))
+      .map((w) => (w.length >= 5 && /^[הובלמשכ]/.test(w) ? w.slice(1) : w))
+      .filter((w) => w.length >= 3),
+  );
+}
+
+/**
+ * דירוג: לכל ידיעה — משקל האתר, מיקומה בפיד (ראש הפיד = ידיעה ראשית), וטריות.
+ * ידיעות דומות מכמה אתרים מאוחדות לאשכול אחד ומקבלות בונוס כיסוי.
+ * מוחזרות עד NEWS_LIMIT ידיעות, לכל היותר 3 מאותו אתר.
+ */
+export async function getIsraelNews(): Promise<NewsItem[]> {
+  if (MOCK) return mock.israelNews();
+  const perFeed = await Promise.all(ISRAEL_NEWS_FEEDS.map(async (f) => ({ f, items: await getFeed(f, 20) })));
+  const now = Date.now();
+  type Cluster = { lead: NewsItem & { score: number; weight: number }; words: Set<string>; sources: Set<string>; score: number };
+  const clusters: Cluster[] = [];
+  for (const { f, items } of perFeed) {
+    items.forEach((n, i) => {
+      const t = Date.parse(n.date ?? "");
+      const ageH = Number.isFinite(t) ? Math.max(0, (now - t) / 3600e3) : 12;
+      if (ageH > 24) return;
+      const score = f.weight + Math.max(0, 4 - i * 0.3) + Math.max(0, 3 - ageH / 4);
+      const words = keywords(n.title);
+      const match = clusters.find((c) => [...words].filter((w) => c.words.has(w)).length >= 3);
+      const item = { ...n, score, weight: f.weight };
+      if (!match) { clusters.push({ lead: item, words, sources: new Set([f.name]), score }); return; }
+      if (!match.sources.has(f.name)) { match.sources.add(f.name); match.score += 2 + f.weight / 2; }
+      match.score = Math.max(match.score, score) + 0.1;
+      words.forEach((w) => match.words.add(w));
+      if (item.weight > match.lead.weight) match.lead = item;
+    });
+  }
+  const perSource = new Map<string, number>();
+  const seen = new Set<string>();
+  return clusters
+    .sort((a, b) => b.score - a.score)
+    .filter((c) => {
+      const k = c.lead.source, cnt = perSource.get(k) ?? 0;
+      if (cnt >= 3 || seen.has(c.lead.title)) return false;
+      perSource.set(k, cnt + 1); seen.add(c.lead.title);
+      return true;
+    })
+    .slice(0, NEWS_LIMIT)
+    .map((c) => ({
+      title: c.lead.title, link: c.lead.link, date: c.lead.date,
+      source: c.sources.size > 1 ? `${c.lead.source} ועוד ${c.sources.size - 1}` : c.lead.source,
+      highlight: c.sources.size >= 3,
+    }));
 }
 
 /* ---------------- Sports (ESPN public scoreboard) ---------------- */

@@ -28,6 +28,9 @@ export const STOCKS = [
   { symbol: "BTC-USD", name: "ביטקוין", link: "https://www.google.com/finance/quote/BTC-USD" },
 ];
 
+/** סדר התצוגה בראש "מניות ומדדים". כל השאר מוצגים אחריהם תחת "במעקב", לפי הסדר שלמעלה. */
+export const MARKETS_TOP_ORDER = ["DSIT.TA", "TA35.TA", "^TA125.TA", "^IXIC", "^GSPC", "TA90.TA"];
+
 export const TESLA_SYMBOL = "TSLA";
 export const TESLA_LINK = "https://www.google.com/finance/quote/TSLA:NASDAQ";
 
@@ -52,6 +55,22 @@ export const AI_FEEDS = [
 export const SPORTS_NEWS_FEEDS = [
   { name: "ynet ספורט", url: "https://www.ynet.co.il/Integration/StoryRss3.xml" },
 ];
+
+/**
+ * חדשות — אתרי החדשות המובילים בישראל. weight = דירוג האתר (חשיפה), גבוה = חשוב יותר.
+ * ידיעה שמופיעה בכמה אתרים במקביל מקבלת ניקוד גבוה יותר ("הכי חמה ברשת").
+ */
+export const ISRAEL_NEWS_FEEDS = [
+  { name: "ynet", url: "https://www.ynet.co.il/Integration/StoryRss2.xml", weight: 6 },
+  { name: "N12", url: "https://rcs.mako.co.il/rss/news-military.xml", weight: 5 },
+  { name: "וואלה", url: "https://rss.walla.co.il/feed/1?type=main", weight: 4 },
+  { name: "ישראל היום", url: "https://www.israelhayom.co.il/rss.xml", weight: 3 },
+  { name: "מעריב", url: "https://www.maariv.co.il/Rss/RssChadashot", weight: 2 },
+  { name: "הארץ", url: "https://www.haaretz.co.il/srv/htz---all-articles", weight: 2 },
+];
+
+/** מספר הידיעות המרבי במדור החדשות */
+export const NEWS_LIMIT = 10;
 
 /** ליגות מ-ESPN (ללא מפתח). slug לפי ESPN. */
 export const SPORTS_LEAGUES = [
