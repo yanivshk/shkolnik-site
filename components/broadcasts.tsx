@@ -82,7 +82,7 @@ export function BroadcastTable({ initial, today }: { initial: BroadcastDay | nul
     <div className="glass mb-6 overflow-hidden rounded-[var(--radius-card)]">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/70 px-3 py-3">
         <div>
-          <h3 className="text-[15px] font-extrabold">משחקים בטלוויזיה</h3>
+          <h3 className="text-[15px] font-extrabold">שידורי ספורט</h3>
           <p className="text-[11px] text-muted">
             <span dir="ltr" className="tabular">{shortDate(from).date}</span>–<span dir="ltr" className="tabular">{shortDate(to).date}</span> · ערוץ הספורט וספורט 1
           </p>
