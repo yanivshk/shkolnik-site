@@ -23,11 +23,15 @@ function Row({ b, i }: { b: Broadcast; i: number }) {
   const { day, date } = shortDate(b.date);
   return (
     <tr className="border-t border-line/70 align-middle">
-      <td className="whitespace-nowrap py-2.5 pe-1 ps-3 sm:pe-2">
-        <span className="block text-[11px] text-muted">{day}</span>
-        <span dir="ltr" className="tabular font-semibold">{date}</span>
+      <td className="whitespace-nowrap py-2.5 pe-1 ps-2 sm:pe-2 sm:ps-3">
+        <span className="mb-0.5 inline-block rounded-md bg-gold/70 px-1.5 text-[12px] font-extrabold leading-5 text-navy">{day}</span>
+        <span dir="ltr" className="tabular block font-semibold">{date}</span>
       </td>
-      <td dir="ltr" className="tabular whitespace-nowrap px-1 py-2.5 text-end font-bold text-navy sm:px-1.5">{b.time}</td>
+      {/* שורת רווח בגובה תג היום — כדי שהשעה תהיה באותו קו גובה של התאריך */}
+      <td dir="ltr" className="tabular whitespace-nowrap px-1 py-2.5 text-end font-bold text-navy sm:px-1.5">
+        <span className="invisible mb-0.5 inline-block text-[12px] leading-5" aria-hidden>.</span>
+        <span className="block">{b.time}</span>
+      </td>
       <td className="px-1 py-2.5 sm:px-1.5">
         <span className="sr-only">{b.sport === "soccer" ? "כדורגל" : "כדורסל"}</span>
         {b.sport === "soccer" ? <RealSoccerBall id={`bc-s${i}`} className="h-6 w-6" /> : <RealBasketball id={`bc-b${i}`} className="h-6 w-6" />}
@@ -115,7 +119,7 @@ export function BroadcastTable({ initial, today }: { initial: BroadcastDay | nul
           <table className="w-full text-[13px]">
             <thead>
               <tr className="text-start text-[11px] font-semibold text-muted">
-                <th scope="col" className="py-2 pe-2 ps-3 text-start font-semibold">תאריך</th>
+                <th scope="col" className="py-2 pe-1 ps-2 text-start font-semibold sm:pe-2 sm:ps-3">תאריך</th>
                 <th scope="col" className="px-1.5 py-2 text-start font-semibold">שעה</th>
                 <th scope="col" className="px-1.5 py-2 text-start font-semibold"><span className="sr-only">ענף</span></th>
                 <th scope="col" className="px-1 py-2 text-start font-semibold sm:px-1.5"><span className="sr-only">קבוצה</span></th>
