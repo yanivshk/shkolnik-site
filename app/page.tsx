@@ -6,6 +6,8 @@ import { BottomNav, Clock, Greeting, WorldClocks } from "@/components/client";
 import { SiteMenu } from "@/components/site-menu";
 import { WeatherBar } from "@/components/weather";
 import { DEFAULT_PLACE, getWeather } from "@/lib/weather";
+import { getBroadcasts, israelToday } from "@/lib/broadcasts";
+import { BroadcastTable } from "@/components/broadcasts";
 import { Empty, GameCard, NewsCarousel, NewsList, QuoteTile, Section } from "@/components/ui";
 import { BallsBackdrop, MaccabiBanner, MaccabiDivider, MaccabiLogo, RakMaccabi, RealBasketball, RealSoccerBall } from "@/components/maccabi";
 
@@ -34,8 +36,10 @@ function PhotoLink({ href, label }: { href: string; label: string }) {
 }
 
 export default async function Home() {
-  const [markets, tsla, teslaNews, games, sportsNews, aiNews, news, weather] = await Promise.all([
+  const today = israelToday();
+  const [markets, tsla, teslaNews, games, sportsNews, aiNews, news, weather, broadcasts] = await Promise.all([
     getMarkets(), getTeslaQuote(), getTeslaNews(), getGames(), getSportsNews(), getAINews(), getIsraelNews(), getWeather(DEFAULT_PLACE.lat, DEFAULT_PLACE.lon, DEFAULT_PLACE.name),
+    getBroadcasts(today),
   ]);
 
   const idx = (s: string) => markets.indices.find((q) => q.symbol === s);
@@ -116,6 +120,7 @@ export default async function Home() {
 
         {/* ספורט */}
         <Section id="sports" eyebrow="Sports · רק מכבי" title="ספורט" action={<span className="flex items-center gap-2"><RealSoccerBall id="sp-s" className="h-7 w-7" /><MaccabiLogo className="h-8 w-8" /><RealBasketball id="sp-b" className="h-7 w-7" /></span>}>
+          <BroadcastTable initial={broadcasts} today={today} />
           {games.length ? (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {games.slice(0, 6).map((g) => <GameCard key={g.id} g={g} />)}
