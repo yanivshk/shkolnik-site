@@ -95,13 +95,27 @@ const NAV = [
 export function BottomNav() {
   const [active, setActive] = useState("top");
   useEffect(() => {
-    const els = NAV.map((n) => document.getElementById(n.id)).filter(Boolean) as HTMLElement[];
-    const io = new IntersectionObserver(
-      (entries) => entries.forEach((e) => e.isIntersecting && setActive(e.target.id)),
-      { rootMargin: "-45% 0px -50% 0px" },
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    // "top" is <main> (the whole page), so it never leaves view; pick the last section past mid-screen instead.
+    const els = NAV.slice(1).map((n) => document.getElementById(n.id)).filter(Boolean) as HTMLElement[];
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const mid = window.innerHeight * 0.5;
+      let id = "top";
+      // On phones the first section starts above mid-screen, so keep "home" until half the hero is scrolled past.
+      if (els[0] && window.scrollY >= (els[0].getBoundingClientRect().top + window.scrollY) / 2)
+        for (const el of els) if (el.getBoundingClientRect().top <= mid) id = el.id;
+      setActive(id);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(raf);
+    };
   }, []);
   return (
     <nav
