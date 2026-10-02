@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { OWNER_FULL_NAME, OWNER_FULL_NAME_EN, SEARCH_SNIPPET, SITE_URL } from "@/lib/config";
+import { OWNER_FULL_NAME, OWNER_FULL_NAME_EN, SEARCH_SNIPPET, SITE_NAME, SITE_URL } from "@/lib/config";
 
 const isPublic = process.env.SITE_PUBLIC === "true";
 
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "he_IL",
     url: SITE_URL,
-    siteName: OWNER_FULL_NAME,
+    siteName: SITE_NAME,
     title: OWNER_FULL_NAME,
     description: SEARCH_SNIPPET,
   },
@@ -45,7 +45,7 @@ const personJsonLd = {
       "@type": "WebSite",
       "@id": `${SITE_URL}/#website`,
       url: SITE_URL,
-      name: OWNER_FULL_NAME,
+      name: SITE_NAME,
       inLanguage: "he-IL",
       publisher: { "@id": `${SITE_URL}/#person` },
     },
