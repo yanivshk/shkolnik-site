@@ -10,6 +10,8 @@ export type Broadcast = {
   time: string; // HH:MM
   sport: Sport;
   team: string; // הקבוצה שלנו
+  logo: string; // לוגו הקבוצה שלנו בענף הזה
+  home: boolean; // משחק בית
   opponent: string;
   league: string;
   channels: string[];
@@ -22,13 +24,13 @@ export const BROADCAST_DAYS = 7;
 /** רענון כל חצי שעה */
 export const BROADCAST_REVALIDATE = 1800;
 
-/** הקבוצות שמוצגות בטבלה, ובאילו ענפים */
-const TEAMS: { name: string; sports: Sport[]; re: RegExp }[] = [
-  { name: 'מכבי ת"א', sports: ["soccer", "basketball"], re: /^מכבי (תל[ -]אביב|ת["״׳']א)$/ },
-  { name: 'הפועל ת"א', sports: ["soccer", "basketball"], re: /^הפועל (תל[ -]אביב|ת["״׳']א)$/ },
-  { name: "מכבי חיפה", sports: ["soccer"], re: /^מכבי חיפה$/ },
-  { name: 'בית"ר ירושלים', sports: ["soccer"], re: /^(בית["״׳']?ר|ביתר)( ירושלים)?$/ },
-  { name: "נבחרת ישראל", sports: ["soccer", "basketball"], re: /^(נבחרת )?ישראל$/ },
+/** הקבוצות שמוצגות בטבלה, ובאילו ענפים — עם הלוגו לכל ענף (public/teams) */
+const TEAMS: { name: string; logos: Partial<Record<Sport, string>>; re: RegExp }[] = [
+  { name: 'מכבי ת"א', logos: { soccer: "/teams/maccabi-ta-fc.png", basketball: "/teams/maccabi-ta-bc.png" }, re: /^מכבי (תל[ -]אביב|ת["״׳']א)$/ },
+  { name: 'הפועל ת"א', logos: { soccer: "/teams/hapoel-ta-fc.png", basketball: "/teams/hapoel-ta-bc.png" }, re: /^הפועל (תל[ -]אביב|ת["״׳']א)$/ },
+  { name: "מכבי חיפה", logos: { soccer: "/teams/maccabi-haifa.png" }, re: /^מכבי חיפה$/ },
+  { name: 'בית"ר ירושלים', logos: { soccer: "/teams/beitar.png" }, re: /^(בית["״׳']?ר|ביתר)( ירושלים)?$/ },
+  { name: "נבחרת ישראל", logos: { soccer: "/teams/israel-fc.png", basketball: "/teams/israel-bc.png" }, re: /^(נבחרת )?ישראל$/ },
 ];
 
 const SKIP = /נשים|נוער|נערים|נערות|צעירות|עד גיל|U-?\d\d|כדוריד|כדורעף|פוטסל|חופים|טניס|פאדל|אולפן|תקציר|סיכום|שידור חוזר/;
@@ -69,7 +71,7 @@ function toBroadcast(r: Raw): Broadcast | null {
   if (!sport) return null;
   const sides = r.title.split(",")[0].replace(/\s*\([^)]*\)\s*$/, "").split(" - ").map((s) => s.trim());
   if (sides.length !== 2 || !sides[0] || !sides[1]) return null;
-  const match = (s: string) => TEAMS.find((t) => t.sports.includes(sport) && t.re.test(s));
+  const match = (s: string) => TEAMS.find((t) => t.logos[sport] && t.re.test(s));
   const home = match(sides[0]);
   const away = match(sides[1]);
   const ours = home ?? away;
@@ -81,6 +83,8 @@ function toBroadcast(r: Raw): Broadcast | null {
     time: r.time,
     sport,
     team: ours.name,
+    logo: ours.logos[sport]!,
+    home: !!home,
     opponent,
     league: r.league.replace(/\s*\d{4}\/\d{2,4}$/, "").trim(),
     channels: [r.channel],
@@ -163,13 +167,13 @@ export async function getBroadcasts(from: string, days = BROADCAST_DAYS): Promis
 }
 
 function mockBroadcasts(from: string): Broadcast[] {
-  const row = (d: number, time: string, sport: Sport, team: string, opponent: string, league: string, channels: string[]): Broadcast =>
-    ({ id: `${d}-${team}-${opponent}`, date: addDays(from, d), time, sport, team, opponent, league, channels });
+  const row = (d: number, time: string, sport: Sport, team: string, logo: string, home: boolean, opponent: string, league: string, channels: string[]): Broadcast =>
+    ({ id: `${d}-${team}-${opponent}`, date: addDays(from, d), time, sport, team, logo, home, opponent, league, channels });
   return [
-    row(0, "21:15", "basketball", 'מכבי ת"א', "פנאתינייקוס", "יורוליג", ["ערוץ הספורט"]),
-    row(1, "20:40", "basketball", 'הפועל ת"א', "עירוני נס ציונה", "גביע ווינר סל", ["ערוץ הספורט"]),
-    row(2, "18:45", "basketball", 'מכבי ת"א', "הפועל ירושלים", "גביע ווינר סל", ["ערוץ הספורט"]),
-    row(2, "21:45", "soccer", "נבחרת ישראל", "אירלנד", "ליגת האומות", ["ערוץ הספורט", "ספורט 5+"]),
-    row(5, "20:30", "soccer", "מכבי חיפה", 'בית"ר ירושלים', "ליגת העל", ["ספורט 1"]),
+    row(0, "21:15", "basketball", 'מכבי ת"א', "/teams/maccabi-ta-bc.png", false, "פנאתינייקוס", "יורוליג", ["ערוץ הספורט"]),
+    row(1, "20:40", "basketball", 'הפועל ת"א', "/teams/hapoel-ta-bc.png", true, "עירוני נס ציונה", "גביע ווינר סל", ["ערוץ הספורט"]),
+    row(2, "18:45", "basketball", 'מכבי ת"א', "/teams/maccabi-ta-bc.png", true, "הפועל ירושלים", "גביע ווינר סל", ["ערוץ הספורט"]),
+    row(2, "21:45", "soccer", "נבחרת ישראל", "/teams/israel-fc.png", false, "אירלנד", "ליגת האומות", ["ערוץ הספורט", "ספורט 5+"]),
+    row(5, "20:30", "soccer", "מכבי חיפה", "/teams/maccabi-haifa.png", true, 'בית"ר ירושלים', "ליגת העל", ["ספורט 1"]),
   ];
 }

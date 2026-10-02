@@ -23,23 +23,30 @@ function Row({ b, i }: { b: Broadcast; i: number }) {
   const { day, date } = shortDate(b.date);
   return (
     <tr className="border-t border-line/70 align-middle">
-      <td className="whitespace-nowrap py-2.5 pe-2 ps-3">
+      <td className="whitespace-nowrap py-2.5 pe-1 ps-3 sm:pe-2">
         <span className="block text-[11px] text-muted">{day}</span>
         <span dir="ltr" className="tabular font-semibold">{date}</span>
       </td>
-      <td dir="ltr" className="tabular whitespace-nowrap px-1.5 py-2.5 text-end font-bold text-navy">{b.time}</td>
-      <td className="px-1.5 py-2.5">
+      <td dir="ltr" className="tabular whitespace-nowrap px-1 py-2.5 text-end font-bold text-navy sm:px-1.5">{b.time}</td>
+      <td className="px-1 py-2.5 sm:px-1.5">
         <span className="sr-only">{b.sport === "soccer" ? "כדורגל" : "כדורסל"}</span>
         {b.sport === "soccer" ? <RealSoccerBall id={`bc-s${i}`} className="h-6 w-6" /> : <RealBasketball id={`bc-b${i}`} className="h-6 w-6" />}
       </td>
-      <td className="px-1.5 py-2.5">
+      <td className="px-1 py-2.5 sm:px-1.5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={b.logo} alt={b.team} title={b.team} width={28} height={28} className="h-7 w-7 min-w-7 max-w-none object-contain" loading="lazy" />
+      </td>
+      <td className="px-1 py-2.5 sm:px-1.5">
         <span className="block text-[11px] text-muted">{b.team} נגד</span>
         <span className="font-bold">{b.opponent}</span>
       </td>
-      <td className="py-2.5 pe-3 ps-1.5 sm:pe-1.5">
+      <td className="px-1 py-2.5 sm:px-1.5">
+        <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold ${b.home ? "bg-gold/60 text-navy" : "bg-navy/[0.07] text-muted"}`}>{b.home ? "בית" : "חוץ"}</span>
+      </td>
+      <td className="py-2.5 pe-3 ps-1 sm:pe-1.5 sm:ps-1.5">
         <span className="flex flex-wrap gap-1">
           {b.channels.map((c) => (
-            <span key={c} className="whitespace-nowrap rounded-full bg-royal/[0.08] px-2 py-0.5 text-[11px] font-semibold text-royal">{c}</span>
+            <span key={c} className="rounded-full bg-royal/[0.08] px-2 py-0.5 text-center text-[11px] font-semibold leading-tight text-royal sm:whitespace-nowrap">{c}</span>
           ))}
         </span>
         {/* בנייד הליגה מתחת לערוץ, כדי שהטבלה תיכנס ברוחב המסך */}
@@ -111,7 +118,9 @@ export function BroadcastTable({ initial, today }: { initial: BroadcastDay | nul
                 <th scope="col" className="py-2 pe-2 ps-3 text-start font-semibold">תאריך</th>
                 <th scope="col" className="px-1.5 py-2 text-start font-semibold">שעה</th>
                 <th scope="col" className="px-1.5 py-2 text-start font-semibold"><span className="sr-only">ענף</span></th>
-                <th scope="col" className="px-1.5 py-2 text-start font-semibold">יריבה</th>
+                <th scope="col" className="px-1 py-2 text-start font-semibold sm:px-1.5"><span className="sr-only">קבוצה</span></th>
+                <th scope="col" className="px-1 py-2 text-start font-semibold sm:px-1.5">יריבה</th>
+                <th scope="col" className="px-1 py-2 text-start font-semibold sm:px-1.5">בית/חוץ</th>
                 <th scope="col" className="py-2 pe-3 ps-1.5 text-start font-semibold sm:pe-1.5">ערוץ<span className="sm:hidden"> · ליגה</span></th>
                 <th scope="col" className="hidden py-2 pe-3 ps-1.5 text-start font-semibold sm:table-cell">ליגה</th>
               </tr>
