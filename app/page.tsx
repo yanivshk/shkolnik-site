@@ -1,5 +1,5 @@
-import { CONTACT_EMAIL, MARKETS_TOP_ORDER, OWNER_FULL_NAME, OWNER_NAME, STOCKS, WORLD_CLOCKS } from "@/lib/config";
-import { getAINews, getGames, getIsraelNews, getMarkets, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
+import { CONTACT_EMAIL, MARKETS_TOP_ORDER, OWNER_FULL_NAME, OWNER_NAME, STOCKS, WORLD_CLOCKS, quoteLink } from "@/lib/config";
+import { getAINews, getIsraelNews, getMarkets, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
 import { formatPct, hebrewDate } from "@/lib/format";
 import type { Quote } from "@/lib/types";
 import { BottomNav, Clock, Greeting, WorldClocks } from "@/components/client";
@@ -8,7 +8,7 @@ import { WeatherBar } from "@/components/weather";
 import { DEFAULT_PLACE, getWeather } from "@/lib/weather";
 import { getBroadcasts, israelToday } from "@/lib/broadcasts";
 import { BroadcastTable } from "@/components/broadcasts";
-import { Empty, GameCard, NewsCarousel, NewsList, QuoteTile, Section } from "@/components/ui";
+import { Empty, NewsCarousel, NewsList, QuoteTile, Section } from "@/components/ui";
 import { BallsBackdrop, MaccabiBanner, MaccabiDivider, MaccabiLogo, RakMaccabi, RealBasketball, RealSoccerBall } from "@/components/maccabi";
 
 export const revalidate = 300;
@@ -18,11 +18,13 @@ const PULSE_SHORT: Record<string, string> = { "TA35.TA": 'ת"א 35', "^GSPC": "S
 
 function PulseChip({ q }: { q: Quote }) {
   const up = q.changePct >= 0;
+  const href = quoteLink(q.symbol);
+  const Tag = href ? "a" : "span";
   return (
-    <span className="glass inline-flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-full px-1.5 py-1.5 text-[11px]">
+    <Tag {...(href ? { href, target: "_blank", rel: "noopener noreferrer" } : {})} className="glass inline-flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-full px-1.5 py-1.5 text-[11px]">
       <span className="font-semibold">{PULSE_SHORT[q.symbol] ?? q.name}</span>
       <span dir="ltr" className={`tabular font-bold ${up ? "text-up" : "text-down"}`}>{formatPct(q.changePct)}</span>
-    </span>
+    </Tag>
   );
 }
 
@@ -37,8 +39,8 @@ function PhotoLink({ href, label }: { href: string; label: string }) {
 
 export default async function Home() {
   const today = israelToday();
-  const [markets, tsla, teslaNews, games, sportsNews, aiNews, news, weather, broadcasts] = await Promise.all([
-    getMarkets(), getTeslaQuote(), getTeslaNews(), getGames(), getSportsNews(), getAINews(), getIsraelNews(), getWeather(DEFAULT_PLACE.lat, DEFAULT_PLACE.lon, DEFAULT_PLACE.name),
+  const [markets, tsla, teslaNews, sportsNews, aiNews, news, weather, broadcasts] = await Promise.all([
+    getMarkets(), getTeslaQuote(), getTeslaNews(), getSportsNews(), getAINews(), getIsraelNews(), getWeather(DEFAULT_PLACE.lat, DEFAULT_PLACE.lon, DEFAULT_PLACE.name),
     getBroadcasts(today),
   ]);
 
@@ -121,11 +123,6 @@ export default async function Home() {
         {/* ספורט */}
         <Section id="sports" eyebrow="Sports · רק מכבי" title="ספורט" action={<span className="flex items-center gap-2"><RealSoccerBall id="sp-s" className="h-7 w-7" /><MaccabiLogo className="h-8 w-8" /><RealBasketball id="sp-b" className="h-7 w-7" /></span>}>
           <BroadcastTable initial={broadcasts} today={today} />
-          {games.length > 0 && (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {games.slice(0, 6).map((g) => <GameCard key={g.id} g={g} />)}
-            </div>
-          )}
           <h3 className="mb-3 mt-7 text-[13px] font-semibold text-muted">כותרות</h3>
           <NewsList items={sportsNews} showSource={false} />
         </Section>
