@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { OWNER_FULL_NAME, SEARCH_SNIPPET, SITE_URL } from "@/lib/config";
+import { SEARCH_SNIPPET, SITE_NAME, SITE_URL } from "@/lib/config";
 import { ProfileArticle } from "@/components/subpage";
 
 const NAME = "תומר שקולניק";
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: { absolute: NAME },
   description: SEARCH_SNIPPET,
   alternates: { canonical: "/tomer-shkolnik" },
-  openGraph: { type: "profile", siteName: OWNER_FULL_NAME, title: NAME, description: SEARCH_SNIPPET, url: URL, locale: "he_IL" },
+  openGraph: { type: "profile", siteName: SITE_NAME, title: NAME, description: SEARCH_SNIPPET, url: URL, locale: "he_IL" },
 };
 
 const jsonLd = {

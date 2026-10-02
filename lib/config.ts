@@ -112,6 +112,8 @@ export const TESLA_PHOTO_SEARCH = "intitle:Tesla incategory:Quality_images";
 export const SITE_URL = process.env.SITE_URL || "https://www.shkolnik.co.il";
 export const OWNER_FULL_NAME = "יניב שקולניק";
 export const OWNER_FULL_NAME_EN = "Yaniv Shkolnik";
+/** שם האתר — מופיע בגוגל מעל הכותרת של כל תוצאה */
+export const SITE_NAME = "Shkolnik Family";
 
 /** התיאור שמופיע בגוגל מתחת לשם (עמוד הבית ודפי המשפחה) */
 export const SEARCH_SNIPPET = "מה זה הפועל?";
