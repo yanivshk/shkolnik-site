@@ -121,11 +121,11 @@ export default async function Home() {
         {/* ספורט */}
         <Section id="sports" eyebrow="Sports · רק מכבי" title="ספורט" action={<span className="flex items-center gap-2"><RealSoccerBall id="sp-s" className="h-7 w-7" /><MaccabiLogo className="h-8 w-8" /><RealBasketball id="sp-b" className="h-7 w-7" /></span>}>
           <BroadcastTable initial={broadcasts} today={today} />
-          {games.length ? (
+          {games.length > 0 && (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {games.slice(0, 6).map((g) => <GameCard key={g.id} g={g} />)}
             </div>
-          ) : <Empty text="אין משחקים במחזור הקרוב" />}
+          )}
           <h3 className="mb-3 mt-7 text-[13px] font-semibold text-muted">כותרות</h3>
           <NewsList items={sportsNews} showSource={false} />
         </Section>
