@@ -64,7 +64,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="he" dir="rtl">
       <body className="min-h-dvh">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }} />
-        {children}
+        {/* תוכן העמוד לא נכנס לקטע התיאור בגוגל — כך מוצג רק התיאור "מה זה הפועל?" */}
+        <div data-nosnippet className="contents">{children}</div>
       </body>
     </html>
   );
