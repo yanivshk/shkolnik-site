@@ -1,0 +1,131 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { addDays, type Broadcast, type BroadcastDay } from "@/lib/broadcasts";
+import { RealBasketball, RealSoccerBall } from "@/components/maccabi";
+
+const I = ({ d }: { d: string }) => (
+  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d={d} />
+  </svg>
+);
+const PREV = "M9 6l6 6-6 6"; // ב-RTL "הקודם" מצביע ימינה
+const NEXT = "M15 6l-6 6 6 6";
+
+const dayFmt = new Intl.DateTimeFormat("he-IL", { weekday: "short", timeZone: "UTC" });
+/** "ה׳ 02.10" */
+function shortDate(iso: string) {
+  const [, m, d] = iso.split("-");
+  return { day: dayFmt.format(new Date(`${iso}T12:00:00Z`)).replace("יום ", ""), date: `${d}.${m}` };
+}
+
+function Row({ b, i }: { b: Broadcast; i: number }) {
+  const { day, date } = shortDate(b.date);
+  return (
+    <tr className="border-t border-line/70 align-middle">
+      <td className="whitespace-nowrap py-2.5 pe-2 ps-3">
+        <span className="block text-[11px] text-muted">{day}</span>
+        <span dir="ltr" className="tabular font-semibold">{date}</span>
+      </td>
+      <td dir="ltr" className="tabular whitespace-nowrap px-1.5 py-2.5 text-end font-bold text-navy">{b.time}</td>
+      <td className="px-1.5 py-2.5">
+        <span className="sr-only">{b.sport === "soccer" ? "כדורגל" : "כדורסל"}</span>
+        {b.sport === "soccer" ? <RealSoccerBall id={`bc-s${i}`} className="h-6 w-6" /> : <RealBasketball id={`bc-b${i}`} className="h-6 w-6" />}
+      </td>
+      <td className="px-1.5 py-2.5">
+        <span className="block text-[11px] text-muted">{b.team} נגד</span>
+        <span className="font-bold">{b.opponent}</span>
+      </td>
+      <td className="py-2.5 pe-3 ps-1.5 sm:pe-1.5">
+        <span className="flex flex-wrap gap-1">
+          {b.channels.map((c) => (
+            <span key={c} className="whitespace-nowrap rounded-full bg-royal/[0.08] px-2 py-0.5 text-[11px] font-semibold text-royal">{c}</span>
+          ))}
+        </span>
+        {/* בנייד הליגה מתחת לערוץ, כדי שהטבלה תיכנס ברוחב המסך */}
+        <span className="mt-1 block text-[11px] text-muted sm:hidden">{b.league}</span>
+      </td>
+      <td className="hidden py-2.5 pe-3 ps-1.5 text-[12px] text-muted sm:table-cell">{b.league}</td>
+    </tr>
+  );
+}
+
+export function BroadcastTable({ initial, today }: { initial: BroadcastDay | null; today: string }) {
+  const [from, setFrom] = useState(initial?.from ?? today);
+  const [data, setData] = useState<BroadcastDay | null>(initial);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const req = useRef(0);
+
+  async function load(date: string) {
+    if (!date) return;
+    setFrom(date);
+    const id = ++req.current;
+    setBusy(true);
+    setFailed(false);
+    try {
+      const r = await fetch(`/api/broadcasts?from=${date}`);
+      if (id !== req.current) return;
+      if (r.ok) setData(await r.json());
+      else setFailed(true);
+    } catch {
+      if (id === req.current) setFailed(true);
+    } finally {
+      if (id === req.current) setBusy(false);
+    }
+  }
+
+  const items = data?.from === from ? data.items : [];
+  const to = addDays(from, (data?.days ?? 7) - 1);
+
+  return (
+    <div className="glass mb-6 overflow-hidden rounded-[var(--radius-card)]">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/70 px-3 py-3">
+        <div>
+          <h3 className="text-[15px] font-extrabold">משחקים בטלוויזיה</h3>
+          <p className="text-[11px] text-muted">
+            <span dir="ltr" className="tabular">{shortDate(from).date}</span>–<span dir="ltr" className="tabular">{shortDate(to).date}</span> · ערוץ הספורט וספורט 1
+          </p>
+        </div>
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={() => load(addDays(from, -1))} className="glass press grid h-9 w-9 place-items-center rounded-full text-royal" aria-label="יום קודם"><I d={PREV} /></button>
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => load(e.target.value)}
+            aria-label="בחירת תאריך"
+            className="glass h-9 rounded-full px-3 text-[13px] font-semibold text-ink"
+          />
+          <button type="button" onClick={() => load(addDays(from, 1))} className="glass press grid h-9 w-9 place-items-center rounded-full text-royal" aria-label="יום הבא"><I d={NEXT} /></button>
+          {from !== today && (
+            <button type="button" onClick={() => load(today)} className="press h-9 rounded-full bg-gold/70 px-3 text-[12px] font-bold text-navy">היום</button>
+          )}
+        </div>
+      </div>
+
+      <div className={`overflow-x-auto transition-opacity ${busy ? "opacity-50" : ""}`} aria-busy={busy}>
+        {items.length ? (
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="text-start text-[11px] font-semibold text-muted">
+                <th scope="col" className="py-2 pe-2 ps-3 text-start font-semibold">תאריך</th>
+                <th scope="col" className="px-1.5 py-2 text-start font-semibold">שעה</th>
+                <th scope="col" className="px-1.5 py-2 text-start font-semibold"><span className="sr-only">ענף</span></th>
+                <th scope="col" className="px-1.5 py-2 text-start font-semibold">יריבה</th>
+                <th scope="col" className="py-2 pe-3 ps-1.5 text-start font-semibold sm:pe-1.5">ערוץ<span className="sm:hidden"> · ליגה</span></th>
+                <th scope="col" className="hidden py-2 pe-3 ps-1.5 text-start font-semibold sm:table-cell">ליגה</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((b, i) => <Row key={b.id} b={b} i={i} />)}
+            </tbody>
+          </table>
+        ) : (
+          <p className="px-4 py-6 text-center text-[13px] text-muted">
+            {busy ? "טוען…" : failed ? "לוח השידורים לא זמין כרגע" : "אין שידורים של הקבוצות שלנו בתאריכים האלה. הערוצים מפרסמים לוח כשבוע מראש."}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
