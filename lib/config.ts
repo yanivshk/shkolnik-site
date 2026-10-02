@@ -98,7 +98,7 @@ export const TZ = "Asia/Jerusalem";
 /** שעוני עולם (שורה אחת בראש העמוד) — קיצור באנגלית + אזור זמן */
 /** שעוני עולם — לחיצה פותחת את עמוד גוגל על המקום (מזג אוויר, שעה ומידע) */
 export const WORLD_CLOCKS = [
-  { label: "IND", tz: "Asia/Kolkata", place: "הודו" },
+  { label: "IND", tz: "Asia/Kolkata", place: "דלהי, הודו" },
   { label: "SGP", tz: "Asia/Singapore", place: "סינגפור" },
   { label: "BKK", tz: "Asia/Bangkok", place: "בנגקוק" },
   { label: "LDN", tz: "Europe/London", place: "לונדון" },
