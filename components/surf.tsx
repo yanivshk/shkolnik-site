@@ -106,7 +106,7 @@ export function SurfBar({ initial }: { initial: Surf | null }) {
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`גלישה ב${s.spot}: גלים ${s.wave.toFixed(1)} מטר, רוח ${Math.round(s.wind)} קשר — תחזית מלאה ב-4surfers`}
-          className="glass press inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[11px] font-semibold"
+          className="glass press inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[12px] font-semibold text-navy"
         >
           <I d={WAVE_ICON} className="h-3.5 w-3.5 text-royal" />
           <span>גלישה</span>
@@ -120,7 +120,7 @@ export function SurfBar({ initial }: { initial: Surf | null }) {
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-label={`אזור גלישה: ${s.spot}. לחץ לשינוי`}
-          className="inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-[12px] font-semibold text-white backdrop-blur"
+          className="inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-[13px] font-semibold text-white backdrop-blur"
         >
           <I d={PIN} className="h-3.5 w-3.5 text-gold" />
           {s.spot}
