@@ -9,6 +9,7 @@ const csp = [
   "img-src 'self' data: https://upload.wikimedia.org https://a.espncdn.com",
   "font-src 'self' data:",
   "connect-src 'self'",
+  "frame-src https://calendar.2net.co.il",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

@@ -7,6 +7,7 @@ export const MENU = [
   { href: "/ai-tools", label: "כלי AI" },
   { href: "/support-tools", label: "כלי תמיכה" },
   { href: "/articles", label: "מאמרים" },
+  { href: "/hebrew-calendar", label: "לוח שנה עברי" },
   { href: "/yaniv-shkolnik", label: "יניב שקולניק" },
   { href: "/tomer-shkolnik", label: "תומר שקולניק" },
   { href: "/guy-shkolnik", label: "גיא שקולניק" },

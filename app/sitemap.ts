@@ -14,5 +14,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/articles", 0.7, "weekly"),
     page("/ai-tools", 0.6),
     page("/support-tools", 0.6),
+    page("/hebrew-calendar", 0.5),
   ];
 }

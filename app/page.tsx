@@ -1,8 +1,8 @@
-import { CONTACT_EMAIL, MARKETS_TOP_ORDER, OWNER_FULL_NAME, OWNER_NAME, STOCKS, WORLD_CLOCKS, quoteLink } from "@/lib/config";
+import { CONTACT_EMAIL, MARKETS_TOP_ORDER, OWNER_FULL_NAME, STOCKS, WORLD_CLOCKS, quoteLink } from "@/lib/config";
 import { getAINews, getIsraelNews, getMarkets, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
 import { formatPct, hebrewDate } from "@/lib/format";
 import type { Quote } from "@/lib/types";
-import { AutoRefresh, BottomNav, Clock, Greeting, WorldClocks } from "@/components/client";
+import { AutoRefresh, BottomNav, Clock, WorldClocks } from "@/components/client";
 import { SiteMenu } from "@/components/site-menu";
 import { WeatherBar } from "@/components/weather";
 import { DEFAULT_PLACE, getWeather } from "@/lib/weather";
@@ -91,12 +91,11 @@ export default async function Home() {
             </p>
             <WorldClocks clocks={WORLD_CLOCKS} />
             <WeatherBar initial={weather} />
-            <h1 className="text-[32px] font-black leading-[1.05] tracking-tight sm:text-6xl">
-              <Greeting name={OWNER_NAME} />
-            </h1>
+            {/* כותרת ראשית מוסתרת ויזואלית — נשמרת לצורכי SEO ונגישות */}
+            <h1 className="sr-only">{OWNER_FULL_NAME}</h1>
 
             {pulse.length > 0 && (
-              <div className="mt-3 grid max-w-md grid-cols-4 gap-1.5">
+              <div className="mt-1 grid max-w-md grid-cols-4 gap-1.5">
                 {pulse.map((q) => <PulseChip key={q.symbol} q={q} />)}
               </div>
             )}
