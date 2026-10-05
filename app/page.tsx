@@ -109,7 +109,7 @@ export default async function Home() {
               {topQuotes.map((q) => <QuoteTile key={q.symbol} q={q} showCurrency={isStock(q.symbol)} />)}
             </div>
           ) : <Empty />}
-          <h3 className="mb-3 mt-7 text-[13px] font-semibold text-muted">במעקב</h3>
+          <h3 className="mb-3 mt-7 text-[17px] font-semibold text-muted">במעקב</h3>
           {restQuotes.length ? (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
               {restQuotes.map((q) => <QuoteTile key={q.symbol} q={q} showCurrency={isStock(q.symbol)} />)}
@@ -122,7 +122,7 @@ export default async function Home() {
         {/* ספורט */}
         <Section id="sports" eyebrow="Sports · רק מכבי" title="ספורט" action={<span className="flex items-center gap-2"><RealSoccerBall id="sp-s" className="h-7 w-7" /><MaccabiLogo className="h-8 w-8" /><RealBasketball id="sp-b" className="h-7 w-7" /></span>}>
           <BroadcastTable initial={broadcasts} today={today} />
-          <h3 className="mb-3 mt-7 text-[13px] font-semibold text-muted">כותרות</h3>
+          <h3 className="mb-3 mt-7 text-[17px] font-semibold text-muted">כותרות</h3>
           <NewsList items={sportsNews} showSource={false} />
         </Section>
 
