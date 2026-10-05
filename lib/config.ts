@@ -88,7 +88,7 @@ export const HIGHLIGHT_KEYWORDS = ["מכבי תל אביב", "מכבי ת\"א", 
 /** זמני רענון (שניות) */
 export const REVALIDATE = {
   markets: 300,
-  news: 900,
+  news: 600,
   sports: 300,
   photo: 3600,
 };
