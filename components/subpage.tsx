@@ -55,7 +55,7 @@ export function SubPage({ title, subtitle, eyebrow, stats, children, jsonLd }: {
               {eyebrow}
             </p>
           )}
-          <h1 className="mt-3 text-[34px] font-black leading-tight sm:text-5xl">{title}</h1>
+          <h1 className="mt-3 text-[44px] font-black leading-tight sm:text-[62px]">{title}</h1>
           {subtitle && <p className="mt-2 max-w-md text-[15px] leading-relaxed text-white/80">{subtitle}</p>}
           {stats && stats.length > 0 && (
             <div className="mt-5 flex flex-wrap gap-2">
@@ -104,7 +104,7 @@ export function ToolGroups({ groups }: { groups: ToolGroup[] }) {
               <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-navy to-royal text-gold shadow-[0_10px_24px_-12px_rgba(19,48,110,0.9)]">
                 <Icon name={g.icon} />
               </span>
-              <h2 id={`${g.id}-t`} className="text-[22px] font-extrabold tracking-tight text-ink">{g.title}</h2>
+              <h2 id={`${g.id}-t`} className="text-[29px] font-extrabold tracking-tight text-ink">{g.title}</h2>
               <span className="rounded-full bg-gold/30 px-2.5 py-0.5 text-[12px] font-bold text-navy">{g.tools.length}</span>
               <span className="h-px flex-1 bg-gradient-to-l from-transparent to-royal/20" />
             </div>
@@ -119,7 +119,7 @@ export function ToolGroups({ groups }: { groups: ToolGroup[] }) {
                         {initials(t.name)}
                       </span>
                       <div className="min-w-0">
-                        <h3 dir="auto" className="text-[17px] font-extrabold leading-tight text-ink">{t.name}</h3>
+                        <h3 dir="auto" className="text-[22px] font-extrabold leading-tight text-ink">{t.name}</h3>
                         {t.tag && <span className="mt-1 inline-block rounded-full bg-up/10 px-2 py-0.5 text-[11px] font-bold text-up">{t.tag}</span>}
                       </div>
                     </div>
@@ -172,9 +172,9 @@ export function ProfileArticle({ name, nameEn, eyebrow, headline, paragraphs }: 
             <RealBasketball id="pa-b" className="absolute -left-6 -top-6 h-24 w-24 opacity-80" />
             <RealSoccerBall id="pa-s" className="absolute left-24 top-6 h-10 w-10 opacity-80" />
             <p className="relative text-[12px] font-bold uppercase tracking-[0.2em] text-gold">{eyebrow}</p>
-            <h1 className="relative mt-3 text-[34px] font-black leading-tight sm:text-5xl">
+            <h1 className="relative mt-3 text-[44px] font-black leading-tight sm:text-[62px]">
               {name}
-              <span className="mt-2 block text-[20px] font-bold text-white/85 sm:text-2xl">{headline}</span>
+              <span className="mt-2 block text-[26px] font-bold text-white/85 sm:text-[31px]">{headline}</span>
             </h1>
             <p className="relative mt-3 font-latin text-[13px] text-white/60" dir="ltr">{nameEn}</p>
           </div>
