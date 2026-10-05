@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { addDays, type Broadcast, type BroadcastDay } from "@/lib/broadcasts";
 import { RealBasketball, RealSoccerBall } from "@/components/maccabi";
 
@@ -67,6 +67,12 @@ export function BroadcastTable({ initial, today }: { initial: BroadcastDay | nul
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const req = useRef(0);
+
+  // רענון אוטומטי של השרת מביא initial חדש — מעדכנים רק אם המשתמש לא בחר תאריך אחר
+  useEffect(() => {
+    if (initial && initial.from === from && !busy) setData(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial]);
 
   async function load(date: string) {
     if (!date) return;
