@@ -22,7 +22,7 @@ export type BroadcastDay = { from: string; days: number; items: Broadcast[] };
 /** הערוצים מפרסמים לוח כשבוע קדימה */
 export const BROADCAST_DAYS = 7;
 /** רענון כל חצי שעה */
-export const BROADCAST_REVALIDATE = 1800;
+export const BROADCAST_REVALIDATE = 600;
 
 /** הקבוצות שמוצגות בטבלה, ובאילו ענפים — עם הלוגו לכל ענף (public/teams) */
 const TEAMS: { name: string; logos: Partial<Record<Sport, string>>; re: RegExp }[] = [
