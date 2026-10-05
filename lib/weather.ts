@@ -16,7 +16,7 @@ export type Place = { name: string; country: string; lat: number; lon: number };
 export const DEFAULT_PLACE: Place = { name: "תל אביב", country: "ישראל", lat: 32.0853, lon: 34.7818 };
 
 /** רענון כל שעה — מתעדכן כמה פעמים ביום */
-export const WEATHER_REVALIDATE = 3600;
+export const WEATHER_REVALIDATE = 600;
 
 type OpenMeteo = {
   current?: { temperature_2m: number; relative_humidity_2m: number; weather_code: number; is_day: number };
