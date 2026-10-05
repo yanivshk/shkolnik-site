@@ -86,9 +86,9 @@ export default function YanivShkolnikArticle() {
             <RealBasketball id="art-b" className="absolute -left-6 -top-6 h-24 w-24 opacity-80" />
             <RealSoccerBall id="art-s" className="absolute left-24 top-6 h-10 w-10 opacity-80" />
             <p className="relative text-[12px] font-bold uppercase tracking-[0.2em] text-gold">פרופיל · מדע וחקלאות</p>
-            <h1 className="relative mt-3 text-[34px] font-black leading-tight sm:text-5xl">
+            <h1 className="relative mt-3 text-[44px] font-black leading-tight sm:text-[62px]">
               {OWNER_FULL_NAME}
-              <span className="mt-2 block text-[20px] font-bold text-white/85 sm:text-2xl">המדען שחוקר את החסה בשטח</span>
+              <span className="mt-2 block text-[26px] font-bold text-white/85 sm:text-[31px]">המדען שחוקר את החסה בשטח</span>
             </h1>
             <p className="relative mt-3 font-latin text-[13px] text-white/60" dir="ltr">{OWNER_FULL_NAME_EN}</p>
           </div>

@@ -14,7 +14,7 @@ export function Section({ id, eyebrow, title, action, children, tight = false }:
             <span className="h-px w-6 bg-gradient-to-l from-gold to-royal/30" />
             {eyebrow}
           </p>
-          <h2 id={`${id}-title`} className="text-[28px] font-extrabold leading-none tracking-tight">{title}</h2>
+          <h2 id={`${id}-title`} className="text-[36px] font-extrabold leading-none tracking-tight">{title}</h2>
         </div>
         {action}
       </div>
@@ -97,11 +97,11 @@ export function NewsList({ items, showSource = true }: { items: NewsItem[]; show
             href={n.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-royal/[0.05] active:bg-royal/[0.09]"
+            className="group flex items-start gap-3 px-4 py-4 transition-colors hover:bg-royal/[0.05] active:bg-royal/[0.09]"
           >
-            <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${n.highlight ? "bg-gold ring-2 ring-gold/40" : "bg-royal-2/80"}`} />
+            <span className={`mt-[11px] h-1.5 w-1.5 shrink-0 rounded-full ${n.highlight ? "bg-gold ring-2 ring-gold/40" : "bg-royal-2/80"}`} />
             <span className="min-w-0 flex-1">
-              <span dir="auto" className={`line-clamp-2 block text-[15px] leading-snug ${n.highlight ? "font-bold text-royal" : "font-medium"}`}>
+              <span dir="auto" className={`line-clamp-2 block text-[19.5px] leading-snug ${n.highlight ? "font-bold text-royal" : "font-medium"}`}>
                 {n.title}
               </span>
               <span className="mt-1 block text-[11px] text-faint">
@@ -127,13 +127,13 @@ export function NewsCarousel({ items }: { items: NewsItem[] }) {
           target="_blank"
           rel="noopener noreferrer"
           className="glass neon-edge press relative flex w-[78%] max-w-[320px] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[var(--radius-card)] p-5 sm:w-[300px]"
-          style={{ minHeight: 170 }}
+          style={{ minHeight: 200 }}
         >
           <span className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-gold/50 blur-2xl" />
           <span className="relative inline-flex w-fit items-center gap-1.5 rounded-full border border-gold/70 bg-gold/40 px-2.5 py-0.5 text-[11px] font-semibold text-navy">
             {n.source}
           </span>
-          <span dir="auto" className="relative mt-4 line-clamp-3 text-[17px] font-bold leading-snug">{n.title}</span>
+          <span dir="auto" className="relative mt-4 line-clamp-3 text-[22px] font-bold leading-snug">{n.title}</span>
           <span className="relative mt-3 text-[11px] text-faint">{timeAgo(n.date)}</span>
         </a>
       ))}

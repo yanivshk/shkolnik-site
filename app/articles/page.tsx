@@ -23,7 +23,7 @@ export default function Page() {
             <a href={a.href} className="glass neon-edge press relative flex h-full flex-col overflow-hidden rounded-[24px] p-5">
               <span className="pointer-events-none absolute -left-12 -top-12 h-32 w-32 rounded-full bg-gold/25 blur-2xl" aria-hidden />
               <span className="relative w-fit rounded-full bg-royal/10 px-2.5 py-0.5 text-[11px] font-bold text-royal">{a.tag}</span>
-              <h2 className="relative mt-3 text-[20px] font-extrabold text-ink">{a.name}</h2>
+              <h2 className="relative mt-3 text-[26px] font-extrabold text-ink">{a.name}</h2>
               <p className="relative mt-1 flex-1 text-[14px] leading-6 text-muted">{a.title}</p>
               <span className="relative mt-4 inline-flex items-center gap-2 text-[14px] font-extrabold text-royal">
                 לקריאה
