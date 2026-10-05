@@ -19,7 +19,7 @@ async function readLimited(res: Response): Promise<string | null> {
 }
 
 /** רשימת דומיינים מאושרים להפניית תמונה (/photo, /tesla-photo) — מונע open redirect עקיף */
-const TRUSTED_IMAGE = /^https:\/\/(upload\.wikimedia\.org|commons\.wikimedia\.org|apod\.nasa\.gov)\//;
+const TRUSTED_IMAGE = /^https:\/\/(upload\.wikimedia\.org|thumb\.wikimedia\.org|commons\.wikimedia\.org|apod\.nasa\.gov)\//;
 export const isTrustedImageUrl = (u: string) => TRUSTED_IMAGE.test(u);
 
 async function getJSON<T>(url: string, revalidate: number): Promise<T | null> {
