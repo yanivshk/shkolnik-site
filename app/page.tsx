@@ -1,5 +1,5 @@
 import { CONTACT_EMAIL, MARKETS_TOP_ORDER, OWNER_FULL_NAME, STOCKS, WORLD_CLOCKS, quoteLink } from "@/lib/config";
-import { getAINews, getIsraelNews, getMarkets, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
+import { getAINews, getFx, getIsraelNews, getMarkets, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
 import { formatPct, hebrewDate } from "@/lib/format";
 import type { Quote } from "@/lib/types";
 import { AutoRefresh, BottomNav, Clock, WorldClocks } from "@/components/client";
@@ -7,6 +7,8 @@ import { SiteMenu } from "@/components/site-menu";
 import { WeatherBar } from "@/components/weather";
 import { DEFAULT_PLACE, getWeather } from "@/lib/weather";
 import { getBroadcasts, israelToday } from "@/lib/broadcasts";
+import { getSurf } from "@/lib/surf";
+import { SurfBar } from "@/components/surf";
 import { BroadcastTable } from "@/components/broadcasts";
 import { Empty, NewsCarousel, NewsList, QuoteTile, Section } from "@/components/ui";
 import { BallsBackdrop, MaccabiBanner, MaccabiDivider, MaccabiLogo, RakMaccabi, RealBasketball, RealSoccerBall } from "@/components/maccabi";
@@ -28,6 +30,18 @@ function PulseChip({ q }: { q: Quote }) {
   );
 }
 
+/** שער מטבע מול השקל — באותו עיצוב של שבבי המדדים */
+function FxChip({ q }: { q: Quote }) {
+  const up = q.changePct >= 0;
+  return (
+    <a href={`https://www.google.com/search?hl=he&q=${encodeURIComponent(`${q.name} ILS`)}`} target="_blank" rel="noopener noreferrer" className="glass inline-flex min-w-0 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full px-1 py-1.5 text-[10.5px] tracking-tight" aria-label={`${q.name} ${q.price.toFixed(3)} שקל`}>
+      <span className="font-semibold">{q.name}</span>
+      <span dir="ltr" className="tabular font-bold text-ink">{q.price.toFixed(3)}</span>
+      <span dir="ltr" className={`tabular font-bold ${up ? "text-up" : "text-down"}`}>{formatPct(q.changePct)}</span>
+    </a>
+  );
+}
+
 function PhotoLink({ href, label }: { href: string; label: string }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" className="glass press flex items-center justify-center gap-2 rounded-2xl px-3 py-3 text-[13px] font-semibold text-royal">
@@ -39,9 +53,9 @@ function PhotoLink({ href, label }: { href: string; label: string }) {
 
 export default async function Home() {
   const today = israelToday();
-  const [markets, tsla, teslaNews, sportsNews, aiNews, news, weather, broadcasts] = await Promise.all([
+  const [markets, tsla, teslaNews, sportsNews, aiNews, news, weather, broadcasts, fx, surf] = await Promise.all([
     getMarkets(), getTeslaQuote(), getTeslaNews(), getSportsNews(), getAINews(), getIsraelNews(), getWeather(DEFAULT_PLACE.lat, DEFAULT_PLACE.lon, DEFAULT_PLACE.name),
-    getBroadcasts(today),
+    getBroadcasts(today), getFx(), getSurf(),
   ]);
 
   const idx = (s: string) => markets.indices.find((q) => q.symbol === s);
@@ -99,6 +113,12 @@ export default async function Home() {
                 {pulse.map((q) => <PulseChip key={q.symbol} q={q} />)}
               </div>
             )}
+            {fx.length > 0 && (
+              <div className="mt-1.5 grid max-w-md grid-cols-3 gap-1.5">
+                {fx.map((q) => <FxChip key={q.symbol} q={q} />)}
+              </div>
+            )}
+            <SurfBar initial={surf} />
           </div>
         </section>
 

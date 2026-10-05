@@ -91,6 +91,8 @@ export const REVALIDATE = {
   news: 600,
   sports: 300,
   photo: 3600,
+  fx: 3600,
+  surf: 3600,
 };
 
 export const TZ = "Asia/Jerusalem";
