@@ -23,8 +23,8 @@ export default function Page() {
           title="לוח שנה עברי — 2net"
           className="block h-[80vh] min-h-[640px] w-full border-0 bg-white"
           loading="lazy"
-          referrerPolicy="strict-origin-when-cross-origin"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+          referrerPolicy="no-referrer"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
         />
       </div>
       <p className="mt-3 text-[12px] text-muted">
