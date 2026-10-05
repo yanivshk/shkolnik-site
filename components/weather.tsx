@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { DEFAULT_PLACE, type Place, type Weather } from "@/lib/weather";
 
 const STORE_KEY = "weather-place";
-const REFRESH_MS = 60 * 60 * 1000; // כל שעה
+const REFRESH_MS = 10 * 60 * 1000; // כל 10 דקות
 
 function readPlace(): Place | null {
   try {
