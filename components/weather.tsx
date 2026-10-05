@@ -52,7 +52,7 @@ const googleWeather = (query: string) => `https://www.google.com/search?hl=he&q=
 
 function Chip({ icon, children, label, href }: { icon: string; children: React.ReactNode; label: string; href: string }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="glass press inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-semibold text-ink" title={label} aria-label={label}>
+    <a href={href} target="_blank" rel="noopener noreferrer" className="glass press inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-semibold text-navy" title={label} aria-label={label}>
       <I d={icon} className="h-3.5 w-3.5 text-royal" />
       <span dir="ltr" className="tabular">{children}</span>
     </a>

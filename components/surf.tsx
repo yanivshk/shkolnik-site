@@ -106,7 +106,7 @@ export function SurfBar({ initial }: { initial: Surf | null }) {
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`גלישה ב${s.spot}: גלים ${s.wave.toFixed(1)} מטר, רוח ${Math.round(s.wind)} קשר — תחזית מלאה ב-4surfers`}
-          className="glass press inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[12px] font-semibold text-ink"
+          className="glass press inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[12px] font-semibold text-navy"
         >
           <I d={WAVE_ICON} className="h-3.5 w-3.5 text-royal" />
           <span>גלישה</span>
