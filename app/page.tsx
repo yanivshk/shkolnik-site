@@ -2,7 +2,7 @@ import { CONTACT_EMAIL, MARKETS_TOP_ORDER, OWNER_FULL_NAME, OWNER_NAME, STOCKS, 
 import { getAINews, getIsraelNews, getMarkets, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
 import { formatPct, hebrewDate } from "@/lib/format";
 import type { Quote } from "@/lib/types";
-import { BottomNav, Clock, Greeting, WorldClocks } from "@/components/client";
+import { AutoRefresh, BottomNav, Clock, Greeting, WorldClocks } from "@/components/client";
 import { SiteMenu } from "@/components/site-menu";
 import { WeatherBar } from "@/components/weather";
 import { DEFAULT_PLACE, getWeather } from "@/lib/weather";
@@ -206,6 +206,7 @@ export default async function Home() {
       {/* תחתית קבועה: הבאנר רץ, ומתחתיו כפתורי הניווט */}
       <div className="fixed inset-x-3 z-50 mx-auto flex max-w-md flex-col gap-2" style={{ bottom: "calc(10px + var(--safe-bottom))" }}>
         <MaccabiBanner docked />
+        <AutoRefresh />
         <BottomNav />
       </div>
     </>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const TZ = "Asia/Jerusalem";
 
@@ -151,4 +152,28 @@ export function BottomNav() {
       </ul>
     </nav>
   );
+}
+
+/** רענון אוטומטי של כל תוכני העמוד — כל 10 דקות כשהלשונית גלויה, ומיד בחזרה ללשונית אם עברו 10 דקות. בלי טעינה מחדש של הדף. */
+export function AutoRefresh({ intervalMs = 10 * 60 * 1000 }: { intervalMs?: number }) {
+  const router = useRouter();
+  useEffect(() => {
+    let last = Date.now();
+    const refresh = () => {
+      last = Date.now();
+      router.refresh();
+    };
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") refresh();
+    }, intervalMs);
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && Date.now() - last >= intervalMs) refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [router, intervalMs]);
+  return null;
 }
