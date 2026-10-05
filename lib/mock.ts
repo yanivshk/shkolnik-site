@@ -21,6 +21,8 @@ export const markets = () => ({
   stocks: [q("NVDA", "Nvidia", 212, 13), q("MSFT", "Microsoft", 548, 17), q("GOOGL", "Alphabet", 268, 19), q("AMD", "AMD", 607, 41), q("INTC", "Intel", 116, 43), q("SMH", "SMH · שבבים", 600, 47), q("DRAM", "DRAM · זיכרון", 59.7, 53), q("ESLT.TA", "אלביט", 162000, 23, "ILA"), q("DSIT.TA", "DSIT", 1480, 59, "ILA"), q("ILS=X", "דולר/שקל", 3.34, 29, "ILS"), q("BTC-USD", "ביטקוין", 118400, 31)],
 });
 
+export const fx = () => [q("ILS=X", "USD", 3.652, 61, "ILS"), q("EURILS=X", "EUR", 4.281, 67, "ILS"), q("GBPILS=X", "GBP", 4.917, 71, "ILS")];
+
 export const tesla = () => q("TSLA", "Tesla", 448, 37);
 
 const ago = (h: number) => new Date(Date.now() - h * 3600e3).toUTCString();

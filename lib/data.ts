@@ -68,11 +68,11 @@ type YahooChart = {
   };
 };
 
-async function getQuote(symbol: string, name: string): Promise<Quote | null> {
+async function getQuote(symbol: string, name: string, revalidate: number = REVALIDATE.markets): Promise<Quote | null> {
   const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?range=1mo&interval=1d`;
   const data =
-    (await getJSON<YahooChart>(`https://query1.finance.yahoo.com${path}`, REVALIDATE.markets)) ??
-    (await getJSON<YahooChart>(`https://query2.finance.yahoo.com${path}`, REVALIDATE.markets));
+    (await getJSON<YahooChart>(`https://query1.finance.yahoo.com${path}`, revalidate)) ??
+    (await getJSON<YahooChart>(`https://query2.finance.yahoo.com${path}`, revalidate));
   const r = data?.chart?.result?.[0];
   if (!r) return null;
   const closes = (r.indicators.quote[0]?.close ?? []).filter((v): v is number => typeof v === "number");
@@ -99,6 +99,19 @@ export async function getMarkets() {
     Promise.all(STOCKS.map((s) => getQuote(s.symbol, s.name))),
   ]);
   return { indices: indices.filter(Boolean) as Quote[], stocks: stocks.filter(Boolean) as Quote[] };
+}
+
+/** שערי מטבע מול השקל — דולר, יורו, לירה שטרלינג (מתעדכן פעם בשעה) */
+export const FX_PAIRS = [
+  { symbol: "ILS=X", name: "USD" },
+  { symbol: "EURILS=X", name: "EUR" },
+  { symbol: "GBPILS=X", name: "GBP" },
+];
+
+export async function getFx() {
+  if (MOCK) return mock.fx();
+  const r = await Promise.all(FX_PAIRS.map((p) => getQuote(p.symbol, p.name, REVALIDATE.fx)));
+  return r.filter(Boolean) as Quote[];
 }
 
 export async function getTeslaQuote() {
