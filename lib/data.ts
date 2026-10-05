@@ -10,6 +10,18 @@ import * as mock from "./mock";
 const UA = "Mozilla/5.0 (compatible; ShkolnikHub/1.0; +https://www.shkolnik.co.il)";
 const MOCK = process.env.MOCK_DATA === "1";
 
+/** תקרת גודל לתשובה ממקור חיצוני — הגנה מפני קובץ ענק/XML מנופח (DoS) */
+const MAX_BODY = 5_000_000;
+async function readLimited(res: Response): Promise<string | null> {
+  if (Number(res.headers.get("content-length") ?? 0) > MAX_BODY) return null;
+  const body = await res.text();
+  return body.length > MAX_BODY ? null : body;
+}
+
+/** רשימת דומיינים מאושרים להפניית תמונה (/photo, /tesla-photo) — מונע open redirect עקיף */
+const TRUSTED_IMAGE = /^https:\/\/(upload\.wikimedia\.org|commons\.wikimedia\.org|apod\.nasa\.gov)\//;
+export const isTrustedImageUrl = (u: string) => TRUSTED_IMAGE.test(u);
+
 async function getJSON<T>(url: string, revalidate: number): Promise<T | null> {
   try {
     const res = await fetch(url, {
@@ -18,7 +30,8 @@ async function getJSON<T>(url: string, revalidate: number): Promise<T | null> {
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return null;
-    return (await res.json()) as T;
+    const body = await readLimited(res);
+    return body == null ? null : (JSON.parse(body) as T);
   } catch {
     return null;
   }
@@ -32,7 +45,7 @@ async function getText(url: string, revalidate: number): Promise<string | null> 
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return null;
-    return await res.text();
+    return await readLimited(res);
   } catch {
     return null;
   }
@@ -123,7 +136,15 @@ function pickImage(it: Record<string, unknown>): string | null {
   return match?.[1] ?? null;
 }
 
-const safeUrl = (u: string) => (/^https?:\/\//i.test(u) ? u : "#");
+/** קישורים מפידים: רק https (http משודרג ל-https); כל פרוטוקול אחר (javascript:, data: וכו') נחסם */
+const safeUrl = (u: string) => {
+  try {
+    const x = new URL(u.replace(/^http:/i, "https:"));
+    return x.protocol === "https:" ? x.href : "#";
+  } catch {
+    return "#";
+  }
+};
 
 async function getFeed(feed: { name: string; url: string }, limit = 8): Promise<NewsItem[]> {
   const body = await getText(feed.url, REVALIDATE.news);
