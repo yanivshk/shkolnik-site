@@ -84,7 +84,7 @@ export default async function Home() {
               שקולניק<span className="text-gold-deep">.</span>
             </span>
             <MaccabiLogo className="h-7 w-7" />
-            <RakMaccabi variant="blue" className="hidden min-[400px]:inline-flex" />
+            <RakMaccabi variant="blue" className="hidden min-[400px]:inline-flex max-[399px]:!hidden" />
           </a>
           <div className="flex items-center gap-3">
             <span className="hidden text-[12px] text-muted sm:inline">{hebrewDate()}</span>

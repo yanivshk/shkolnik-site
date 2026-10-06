@@ -51,7 +51,7 @@ const googleWeather = (query: string) => `https://www.google.com/search?hl=he&q=
 
 function Chip({ icon, children, label, href }: { icon: string; children: React.ReactNode; label: string; href: string }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="glass press inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[15px] font-semibold text-navy" title={label} aria-label={label}>
+    <a href={href} target="_blank" rel="noopener noreferrer" className="glass press inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[15px] font-semibold text-navy max-[399px]:px-1.5" title={label} aria-label={label}>
       <I d={icon} className="h-4 w-4 text-royal" />
       <span dir="ltr" className="tabular">{children}</span>
     </a>
@@ -152,7 +152,7 @@ export function WeatherBar({ initial }: { initial: Weather | null }) {
 
   return (
     <div className="relative">
-      <div ref={barRef} className="flex flex-wrap items-center gap-1.5" aria-busy={busy}>
+      <div ref={barRef} className="flex flex-wrap items-center gap-1.5 max-[399px]:gap-1" aria-busy={busy}>
         <Chip icon={c.d} label={`${c.label}, ${w.temp} מעלות — מזג האוויר ב${w.name} בגוגל`} href={googleWeather(`מזג אוויר ${w.name}`)}>{w.temp}°</Chip>
         <Chip icon={DROP} label={`לחות ${w.humidity}% — לחות ב${w.name} בגוגל`} href={googleWeather(`לחות ${w.name}`)}>{w.humidity}%</Chip>
         <Chip icon={UMBRELLA} label={`סיכוי לגשם ${w.rainProb}% — סיכוי לגשם ב${w.name} בגוגל`} href={googleWeather(`סיכוי לגשם ${w.name}`)}>{w.rainProb}%</Chip>
@@ -161,7 +161,7 @@ export function WeatherBar({ initial }: { initial: Weather | null }) {
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-label={`מיקום: ${w.name}. לחץ לשינוי`}
-          className="inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2 py-0.5 text-[15px] font-semibold text-white backdrop-blur"
+          className="inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2 py-0.5 text-[15px] font-semibold text-white backdrop-blur max-[399px]:px-1.5"
         >
           <I d={PARTLY} className="h-4 w-4 text-gold" />
           {w.name}
