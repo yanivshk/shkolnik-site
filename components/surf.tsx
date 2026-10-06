@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { DEFAULT_SPOT_ID, SURF_SPOTS, dirFull, dirShort, spotById, surfSiteUrl, waveLabel, type Surf } from "@/lib/surf-spots";
 
@@ -31,15 +31,26 @@ function WindArrow({ from }: { from: number }) {
   );
 }
 
-/** ציון גלישה — 4 גלשנים, המלאים לפי הציון */
-function Boards({ score }: { score: number }) {
+/** צבעי הציון כמו ב-4surfers: כחול / ירוק / אדום */
+const RANK_FILL: Record<string, string> = { b: "#68b9ef", g: "#b4e97c", r: "#f57663" };
+
+/** ציון גלישה כמו ב-4surfers — 4 גלשנים, מתמלאים מלמטה בחצאים (0.5 = חצי גלשן), משמאל לימין */
+function Boards({ score, color }: { score: number; color?: string }) {
+  const uid = useId();
+  const fill = RANK_FILL[color ?? "b"] ?? RANK_FILL.b;
   return (
-    <span className="inline-flex items-center gap-px" role="img" aria-label={`ציון ${score} מתוך 4`}>
-      {[0, 1, 2, 3].map((n) => (
-        <svg key={n} viewBox="0 0 7 14" className="h-3.5 w-[7px]" aria-hidden>
-          <ellipse cx="3.5" cy="7" rx="3" ry="6.5" fill={n < score ? "#7ec3ef" : "none"} stroke={n < score ? "currentColor" : "#9aa6bd"} />
-        </svg>
-      ))}
+    <span dir="ltr" className="inline-flex items-center gap-px" role="img" aria-label={`ציון ${score} מתוך 4`}>
+      {[0, 1, 2, 3].map((n) => {
+        const part = Math.max(0, Math.min(1, score - n)); // 0 / 0.5 / 1
+        const id = `${uid}-b${n}`;
+        return (
+          <svg key={n} viewBox="0 0 7 14" className="h-3.5 w-[7px]" aria-hidden>
+            <defs><clipPath id={id}><rect x="0" y={14 - 14 * part} width="7" height={14 * part} /></clipPath></defs>
+            {part > 0 && <ellipse cx="3.5" cy="7" rx="3" ry="6.5" fill={fill} clipPath={`url(#${id})`} />}
+            <ellipse cx="3.5" cy="7" rx="3" ry="6.5" fill="none" stroke={part > 0 ? "currentColor" : "#9aa6bd"} />
+          </svg>
+        );
+      })}
     </span>
   );
 }
@@ -124,7 +135,7 @@ export function SurfBar({ initial }: { initial: Surf | null }) {
           <span className={`h-1.5 w-1.5 rounded-full ${waveTone(s.wave)}`} />
           {s.score != null && (
             <>
-              <span className="text-royal"><Boards score={s.score} /></span>
+              <span className="text-royal"><Boards score={s.score} color={s.scoreColor} /></span>
               <span className="h-3 w-px bg-line" />
             </>
           )}

@@ -34,17 +34,9 @@ export type Surf = {
   swell?: number;       // גובה סוול, מ׳
   swellPeriod?: number; // שניות
   swellDir?: number;    // מעלות — מאיפה הסוול מגיע
-  score?: number;       // ציון גלישה 0–4
+  score?: number;       // ציון גלישה של 4surfers: 0–4 גלשנים, בקפיצות של חצי
+  scoreColor?: string;  // צבע הציון ב-4surfers: b (כחול) / g (ירוק) / r (אדום)
 };
-
-/** ציון גלישה 0–4 (גלשנים): לפי גובה הגל, מתוקן לפי המחזור והרוח */
-export function surfScore(wave: number, period: number, wind: number): number {
-  let s = wave < 0.3 ? 0 : wave < 0.6 ? 1 : wave < 1 ? 2 : wave < 1.8 ? 3 : 4;
-  if (s > 0 && period >= 8) s += 1;
-  if (s > 0 && period > 0 && period < 5) s -= 1;
-  if (wind > 15) s -= 1;
-  return Math.max(0, Math.min(4, s));
-}
 
 /** תיאור גובה הגל ביחס לגוף */
 export const waveLabel = (h: number) =>

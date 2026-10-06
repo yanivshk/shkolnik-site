@@ -1,9 +1,10 @@
 import "server-only";
 import { REVALIDATE, TZ } from "./config";
-import { DEFAULT_SPOT_ID, spotById, surfScore, type Surf } from "./surf-spots";
+import { DEFAULT_SPOT_ID, spotById, type Surf } from "./surf-spots";
 
 /**
  * גלישה — מצב הים עכשיו: Open-Meteo Marine (גלים) + Open-Meteo Forecast (רוח). ללא מפתח.
+ * ציון הגלישה (גלשנים) — כפי שמפרסם 4surfers לכל אזור חוף.
  * הנתונים נשמרים במטמון שעה (REVALIDATE.surf) — מתעדכנים פעם בשעה.
  */
 
@@ -21,6 +22,27 @@ type Marine = {
 };
 type Wind = { current?: { wind_speed_10m: number; wind_direction_10m: number; wind_gusts_10m?: number } };
 
+/** ציון הגלישה האחרון של 4surfers לכל אזורי החוף (בקשה אחת לכולם) */
+type Rank = { beachAreaId: number; surfRank: number; surfRankColor?: string };
+
+async function getRank(area: number): Promise<Rank | undefined> {
+  try {
+    const res = await fetch("https://4surfers.co.il/webapi/BeachArea/GetAllBeachAreaLastCsc", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (compatible; ShkolnikHub/1.0)" },
+      body: "{}",
+      next: { revalidate: SURF_REVALIDATE },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return undefined;
+    const all = (await res.json()) as Rank[];
+    const r = Array.isArray(all) ? all.find((x) => x.beachAreaId === area) : undefined;
+    return r && typeof r.surfRank === "number" ? r : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function get<T>(url: string): Promise<T | null> {
   try {
     const res = await fetch(url, { next: { revalidate: SURF_REVALIDATE }, signal: AbortSignal.timeout(8000) });
@@ -35,16 +57,18 @@ export async function getSurf(spotId: number = DEFAULT_SPOT_ID): Promise<Surf | 
   if (!s) return null;
   if (process.env.MOCK_DATA === "1") {
     const k = s.id / 10;
-    const wave = 0.3 + k * 0.1, period = 5 + (k % 4), wind = 6 + k, swellPeriod = 6 + (k % 4) * 0.5;
+    const wave = 0.3 + k * 0.1, period = 5 + (k % 4), wind = 6 + k;
     return {
       spotId: s.id, spot: s.name, wave, period, wind, windDir: 250 + k * 10,
-      gust: wind + 4, swell: wave * 0.8, swellPeriod, swellDir: 280 + k * 5, score: surfScore(wave, swellPeriod, wind),
+      gust: wind + 4, swell: wave * 0.8, swellPeriod: 6 + (k % 4) * 0.5, swellDir: 280 + k * 5,
+      score: (k % 9) / 2, scoreColor: "b",
     };
   }
   const tz = encodeURIComponent(TZ);
-  const [m, w] = await Promise.all([
+  const [m, w, rank] = await Promise.all([
     get<Marine>(`https://marine-api.open-meteo.com/v1/marine?latitude=${s.lat}&longitude=${s.lon}&hourly=wave_height,wave_period,swell_wave_height,swell_wave_period,swell_wave_direction&forecast_days=2&timezone=${tz}`),
     get<Wind>(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=kn&timezone=${tz}`),
+    getRank(s.area),
   ]);
   if (!m?.hourly) return null;
 
@@ -75,6 +99,7 @@ export async function getSurf(spotId: number = DEFAULT_SPOT_ID): Promise<Surf | 
     swell,
     swellPeriod,
     swellDir,
-    score: surfScore(wave, swellPeriod ?? period, wind),
+    score: rank?.surfRank,
+    scoreColor: rank?.surfRankColor,
   };
 }
