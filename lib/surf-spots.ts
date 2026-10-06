@@ -34,8 +34,6 @@ export type Surf = {
   swell?: number;       // גובה סוול, מ׳
   swellPeriod?: number; // שניות
   swellDir?: number;    // מעלות — מאיפה הסוול מגיע
-  score?: number;       // ציון גלישה של 4surfers: 0–4 גלשנים, בקפיצות של חצי
-  scoreColor?: string;  // צבע הציון ב-4surfers: b (כחול) / g (ירוק) / r (אדום)
 };
 
 /** תיאור גובה הגל ביחס לגוף */
