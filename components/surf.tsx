@@ -32,7 +32,6 @@ function WindArrow({ from }: { from: number }) {
 }
 
 const WAVE_ICON = "M2 16c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 20c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M7 11c0-3.5 3-6 7-6-2 1.5-3 3.5-2 6";
-const PIN = "M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z";
 const I = ({ d, className }: { d: string; className: string }) => (
   <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={d} /></svg>
 );
@@ -122,7 +121,7 @@ export function SurfBar({ initial }: { initial: Surf | null }) {
           aria-label={`אזור גלישה: ${s.spot}. לחץ לשינוי`}
           className="inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2 py-0.5 text-[15px] font-semibold text-white backdrop-blur"
         >
-          <I d={PIN} className="h-3.5 w-3.5 text-gold" />
+          <I d={WAVE_ICON} className="h-4 w-4 text-gold" />
           {s.spot}
           <I d="m6 9 6 6 6-6" className="h-3 w-3" />
         </button>
