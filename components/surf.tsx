@@ -99,16 +99,16 @@ export function SurfBar({ initial }: { initial: Surf | null }) {
   if (!s) return null;
 
   return (
-    <div className="relative mt-1.5">
+    <div className="relative mb-3 mt-1.5">
       <div ref={barRef} className="flex flex-wrap items-center gap-1.5" aria-busy={busy}>
         <a
           href={surfSiteUrl(s.spotId)}
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`גלישה ב${s.spot}: גלים ${s.wave.toFixed(1)} מטר, רוח ${Math.round(s.wind)} קשר — תחזית מלאה ב-4surfers`}
-          className="glass press inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[12px] font-semibold text-navy"
+          className="glass press inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[14px] font-semibold text-navy"
         >
-          <I d={WAVE_ICON} className="h-3.5 w-3.5 text-royal" />
+          <I d={WAVE_ICON} className="h-4 w-4 text-royal" />
           <span>גלישה</span>
           <span className={`h-1.5 w-1.5 rounded-full ${waveTone(s.wave)}`} />
           <span dir="ltr" className="tabular font-bold">{s.wave.toFixed(1)}m · {Math.round(s.period)}s</span>
@@ -120,7 +120,7 @@ export function SurfBar({ initial }: { initial: Surf | null }) {
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-label={`אזור גלישה: ${s.spot}. לחץ לשינוי`}
-          className="inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-[13px] font-semibold text-white backdrop-blur"
+          className="inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2 py-0.5 text-[15px] font-semibold text-white backdrop-blur"
         >
           <I d={PIN} className="h-3.5 w-3.5 text-gold" />
           {s.spot}
