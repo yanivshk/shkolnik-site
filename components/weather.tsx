@@ -52,8 +52,8 @@ const googleWeather = (query: string) => `https://www.google.com/search?hl=he&q=
 
 function Chip({ icon, children, label, href }: { icon: string; children: React.ReactNode; label: string; href: string }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="glass press inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-semibold text-navy" title={label} aria-label={label}>
-      <I d={icon} className="h-3.5 w-3.5 text-royal" />
+    <a href={href} target="_blank" rel="noopener noreferrer" className="glass press inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[15px] font-semibold text-navy" title={label} aria-label={label}>
+      <I d={icon} className="h-4 w-4 text-royal" />
       <span dir="ltr" className="tabular">{children}</span>
     </a>
   );
@@ -152,7 +152,7 @@ export function WeatherBar({ initial }: { initial: Weather | null }) {
   const c = condition(w.code, w.isDay);
 
   return (
-    <div className="relative mb-3">
+    <div className="relative">
       <div ref={barRef} className="flex flex-wrap items-center gap-1.5" aria-busy={busy}>
         <Chip icon={c.d} label={`${c.label}, ${w.temp} מעלות — מזג האוויר ב${w.name} בגוגל`} href={googleWeather(`מזג אוויר ${w.name}`)}>{w.temp}°</Chip>
         <Chip icon={DROP} label={`לחות ${w.humidity}% — לחות ב${w.name} בגוגל`} href={googleWeather(`לחות ${w.name}`)}>{w.humidity}%</Chip>
@@ -162,7 +162,7 @@ export function WeatherBar({ initial }: { initial: Weather | null }) {
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-label={`מיקום: ${w.name}. לחץ לשינוי`}
-          className="inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-[13px] font-semibold text-white backdrop-blur"
+          className="inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2 py-0.5 text-[15px] font-semibold text-white backdrop-blur"
         >
           <I d={PIN} className="h-3.5 w-3.5 text-gold" />
           {w.name}
