@@ -35,7 +35,6 @@ const FOG = "M4 10h16M6 14h12M8 18h8M7 6h10";
 const SNOW = "M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9";
 const DROP = "M12 3s6 6.4 6 10.5a6 6 0 0 1-12 0C6 9.4 12 3 12 3z";
 const UMBRELLA = "M12 3a9 9 0 0 1 9 9H3a9 9 0 0 1 9-9zM12 12v6.5a2 2 0 0 1-4 0";
-const PIN = "M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z";
 
 function condition(code: number, isDay: boolean): { d: string; label: string } {
   if (code === 0) return isDay ? { d: SUN, label: "בהיר" } : { d: MOON, label: "בהיר" };
@@ -164,7 +163,7 @@ export function WeatherBar({ initial }: { initial: Weather | null }) {
           aria-label={`מיקום: ${w.name}. לחץ לשינוי`}
           className="inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2 py-0.5 text-[15px] font-semibold text-white backdrop-blur"
         >
-          <I d={PIN} className="h-3.5 w-3.5 text-gold" />
+          <I d={PARTLY} className="h-4 w-4 text-gold" />
           {w.name}
           <I d="m6 9 6 6 6-6" className="h-3 w-3" />
         </button>
