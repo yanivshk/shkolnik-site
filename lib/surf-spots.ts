@@ -30,4 +30,28 @@ export type Surf = {
   period: number;  // שניות
   wind: number;    // קשר
   windDir: number; // מעלות — מאיפה הרוח נושבת
+  gust?: number;        // משבים, קשר
+  swell?: number;       // גובה סוול, מ׳
+  swellPeriod?: number; // שניות
+  swellDir?: number;    // מעלות — מאיפה הסוול מגיע
+  score?: number;       // ציון גלישה 0–4
 };
+
+/** ציון גלישה 0–4 (גלשנים): לפי גובה הגל, מתוקן לפי המחזור והרוח */
+export function surfScore(wave: number, period: number, wind: number): number {
+  let s = wave < 0.3 ? 0 : wave < 0.6 ? 1 : wave < 1 ? 2 : wave < 1.8 ? 3 : 4;
+  if (s > 0 && period >= 8) s += 1;
+  if (s > 0 && period > 0 && period < 5) s -= 1;
+  if (wind > 15) s -= 1;
+  return Math.max(0, Math.min(4, s));
+}
+
+/** תיאור גובה הגל ביחס לגוף */
+export const waveLabel = (h: number) =>
+  h < 0.3 ? "קרסול" : h < 0.6 ? "ברך" : h < 0.9 ? "מותן" : h < 1.2 ? "חזה" : h < 1.5 ? "כתף" : h < 2 ? "ראש" : "מעל הראש";
+
+const DIR_FULL = ["צפוני", "צפון-מזרחי", "מזרחי", "דרום-מזרחי", "דרומי", "דרום-מערבי", "מערבי", "צפון-מערבי"];
+const DIR_SHORT = ["צפ׳", "צפ׳-מז׳", "מז׳", "דר׳-מז׳", "דר׳", "דר׳-מע׳", "מע׳", "צפ׳-מע׳"];
+const octant = (deg: number) => Math.round((((deg % 360) + 360) % 360) / 45) % 8;
+export const dirFull = (deg: number) => DIR_FULL[octant(deg)];   // כיוון סוול
+export const dirShort = (deg: number) => DIR_SHORT[octant(deg)]; // כיוון רוח
