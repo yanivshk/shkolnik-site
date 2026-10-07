@@ -184,3 +184,16 @@ body::after {
 
 .logo-pulse { box-shadow: 0 0 0 0 rgb(255 210 63 / 0.55); animation: logo-pulse 2.4s ease-out infinite; }
 @keyframes logo-pulse { 0% { box-shadow: 0 0 0 0 rgb(255 210 63 / 0.55); } 100% { box-shadow: 0 0 0 12px rgb(255 210 63 / 0); } }
+
+/* דגל ישראל מתנופף (components/flag.tsx) — רצועות בגל עם הפרש פאזה, וצל/אור באותו קצב */
+.flag-slice { animation: flag-wave 2.6s ease-in-out infinite; animation-delay: var(--d); }
+.flag-shade { animation: flag-shade 2.6s ease-in-out infinite; animation-delay: var(--d); }
+@keyframes flag-wave {
+  0%, 100% { transform: translateY(calc(var(--a) * -1)); }
+  50% { transform: translateY(var(--a)); }
+}
+@keyframes flag-shade {
+  0%, 100% { fill: #fff; opacity: 0.28; }
+  25%, 75% { fill: #fff; opacity: 0; }
+  50% { fill: #000; opacity: 0.24; }
+}
