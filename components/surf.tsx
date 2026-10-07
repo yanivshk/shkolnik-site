@@ -99,47 +99,70 @@ export function SurfBar({ initial }: { initial: Surf | null }) {
 
   return (
     <div className="relative mb-3 mt-1.5">
-      <div ref={barRef} className="flex flex-nowrap items-center gap-1.5 overflow-x-auto [scrollbar-width:none] max-[399px]:gap-1" aria-busy={busy}>
-        <a
-          href={surfSiteUrl(s.spotId)}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`גלישה ב${s.spot}: גלים ${s.wave.toFixed(1)} מטר, רוח ${Math.round(s.wind)} קשר — תחזית מלאה ב-4surfers`}
-          className="glass press inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[14px] font-semibold text-navy max-[399px]:gap-1 max-[399px]:px-1.5"
-        >
-          <I d={WAVE_ICON} className="h-4 w-4 text-royal" />
-          <span className={`h-1.5 w-1.5 rounded-full ${waveTone(s.wave)}`} />
-          <span dir="ltr" className="tabular font-bold">{s.wave.toFixed(1)}m</span>
-          <span className="font-normal text-muted">{waveLabel(s.wave)}</span>
-          <span dir="ltr" className="tabular font-bold">· {Math.round(s.period)}s</span>
+      {/* שתי שורות: ים (גל + סוול), ורוח + בחירת החוף — בלי גלילה לצדדים */}
+      <div ref={barRef} className="flex flex-col items-start gap-1.5" aria-busy={busy}>
+        <div className="flex flex-wrap items-center gap-1.5 max-[399px]:gap-1">
+          <a
+            href={surfSiteUrl(s.spotId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`גלישה ב${s.spot}: גלים ${s.wave.toFixed(1)} מטר, רוח ${Math.round(s.wind)} קשר — תחזית מלאה ב-4surfers`}
+            className="glass press inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[14px] font-semibold text-navy max-[399px]:gap-1 max-[399px]:px-1.5"
+          >
+            <I d={WAVE_ICON} className="h-4 w-4 text-royal" />
+            <span className={`h-1.5 w-1.5 rounded-full ${waveTone(s.wave)}`} />
+            <span dir="ltr" className="tabular font-bold">{s.wave.toFixed(1)}m</span>
+            <span className="font-normal text-muted">{waveLabel(s.wave)}</span>
+            <span className="font-normal text-muted">·</span>
+            <span dir="ltr" className="tabular font-bold">{Math.round(s.period)}s</span>
+          </a>
           {s.swell != null && (
-            <>
-              <span className="h-3 w-px bg-line" />
+            <a
+              href={surfSiteUrl(s.spotId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`סוול ב${s.spot}: ${s.swell.toFixed(2)} מטר${s.swellPeriod != null ? `, ${s.swellPeriod.toFixed(1)} שניות` : ""}${s.swellDir != null ? `, ${dirFull(s.swellDir)}` : ""}`}
+              className="glass press inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[14px] font-semibold text-navy max-[399px]:gap-1 max-[399px]:px-1.5"
+            >
               <span className="text-muted">סוול</span>
               <span dir="ltr" className="tabular inline-flex items-center gap-0.5 font-bold text-royal">
                 {s.swellDir != null && <WindArrow from={s.swellDir} />}
                 {s.swell.toFixed(2)}m{s.swellPeriod != null && ` · ${s.swellPeriod.toFixed(1)}s`}
               </span>
-              {s.swellDir != null && <span className="text-muted">{dirFull(s.swellDir)}</span>}
-            </>
+              {s.swellDir != null && (
+                <>
+                  <span className="text-muted max-[399px]:hidden">{dirFull(s.swellDir)}</span>
+                  <span className="hidden text-muted max-[399px]:inline">{dirShort(s.swellDir)}</span>
+                </>
+              )}
+            </a>
           )}
-          <span className="h-3 w-px bg-line" />
-          <span className="text-muted">רוח</span>
-          <span dir="ltr" className="tabular inline-flex items-center gap-0.5 font-bold text-royal"><WindArrow from={s.windDir} />{Math.round(s.wind)}kt</span>
-          <span className="text-muted">{dirShort(s.windDir)}{s.gust != null && " · משבים"}</span>
-          {s.gust != null && <span dir="ltr" className="tabular font-bold">{Math.round(s.gust)}</span>}
-        </a>
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-label={`אזור גלישה: ${s.spot}. לחץ לשינוי`}
-          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2 py-0.5 text-[15px] font-semibold text-white backdrop-blur max-[399px]:px-1.5"
-        >
-          <I d={WAVE_ICON} className="h-4 w-4 text-gold" />
-          {s.spot}
-          <I d="m6 9 6 6 6-6" className="h-3 w-3" />
-        </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5 max-[399px]:gap-1">
+          <a
+            href={surfSiteUrl(s.spotId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`רוח ב${s.spot}: ${Math.round(s.wind)} קשר ${dirShort(s.windDir)}${s.gust != null ? `, משבים ${Math.round(s.gust)}` : ""}`}
+            className="glass press inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[14px] font-semibold text-navy max-[399px]:gap-1 max-[399px]:px-1.5"
+          >
+            <span className="text-muted">רוח</span>
+            <span dir="ltr" className="tabular inline-flex items-center gap-0.5 font-bold text-royal"><WindArrow from={s.windDir} />{Math.round(s.wind)}kt</span>
+            <span className="text-muted">{dirShort(s.windDir)}{s.gust != null && " · משבים"}</span>
+            {s.gust != null && <span dir="ltr" className="tabular font-bold">{Math.round(s.gust)}</span>}
+          </a>
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-label={`אזור גלישה: ${s.spot}. לחץ לשינוי`}
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2 py-0.5 text-[15px] font-semibold text-white backdrop-blur max-[399px]:px-1.5"
+          >
+            <I d={WAVE_ICON} className="h-4 w-4 text-gold" />
+            {s.spot}
+            <I d="m6 9 6 6 6-6" className="h-3 w-3" />
+          </button>
+        </div>
       </div>
 
       {open && pos && createPortal(
