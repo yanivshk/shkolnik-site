@@ -9,7 +9,7 @@ import { DEFAULT_PLACE, getWeather } from "@/lib/weather";
 import { getBroadcasts, israelToday } from "@/lib/broadcasts";
 import { getSurf } from "@/lib/surf";
 import { SurfBar } from "@/components/surf";
-import { IsraelFlag } from "@/components/flag";
+import { IsraelFlag, MaccabiFlag } from "@/components/flag";
 import { BroadcastTable } from "@/components/broadcasts";
 import { Empty, NewsCarousel, NewsList, QuoteTile, Section } from "@/components/ui";
 import { BallsBackdrop, MaccabiBanner, MaccabiDivider, MaccabiLogo, RakMaccabi, RealBasketball, RealSoccerBall } from "@/components/maccabi";
@@ -106,8 +106,11 @@ export default async function Home() {
             <p className="relative mb-2 flex items-center gap-2 text-[12px] font-medium text-white/80">
               <span className="h-0.5 w-8 rounded-full bg-gold" />
               {hebrewDate()}
-              {/* דגל ישראל בקצה השמאלי של השורה — ממוקם absolute, לא משנה את מבנה העמוד */}
-              <IsraelFlag className="pointer-events-none absolute left-0 top-1/2 h-7 -translate-y-1/2" />
+              {/* דגלי ישראל ומכבי בקצה השמאלי של השורה — ממוקמים absolute, לא משנים את מבנה העמוד */}
+              <span dir="ltr" className="pointer-events-none absolute left-0 top-1/2 flex h-7 -translate-y-1/2 gap-2">
+                <IsraelFlag className="h-full" />
+                <MaccabiFlag className="h-full" />
+              </span>
             </p>
             <WorldClocks clocks={WORLD_CLOCKS} />
             <WeatherBar initial={weather} />
