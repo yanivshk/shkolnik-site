@@ -107,7 +107,7 @@ export default async function Home() {
               <span className="h-0.5 w-8 rounded-full bg-gold" />
               {hebrewDate()}
               {/* דגלי ישראל ומכבי בקצה השמאלי של השורה — ממוקמים absolute, לא משנים את מבנה העמוד */}
-              <span dir="ltr" className="pointer-events-none absolute left-0 top-1/2 flex h-7 -translate-y-1/2 gap-2">
+              <span dir="ltr" className="pointer-events-none absolute left-0 top-1/2 -mt-0.5 flex h-8 -translate-y-1/2 gap-2">
                 <IsraelFlag className="h-full" />
                 <MaccabiFlag className="h-full" />
               </span>
