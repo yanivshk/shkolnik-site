@@ -30,4 +30,18 @@ export type Surf = {
   period: number;  // שניות
   wind: number;    // קשר
   windDir: number; // מעלות — מאיפה הרוח נושבת
+  gust?: number;        // משבים, קשר
+  swell?: number;       // גובה סוול, מ׳
+  swellPeriod?: number; // שניות
+  swellDir?: number;    // מעלות — מאיפה הסוול מגיע
 };
+
+/** תיאור גובה הגל ביחס לגוף */
+export const waveLabel = (h: number) =>
+  h < 0.3 ? "קרסול" : h < 0.6 ? "ברך" : h < 0.9 ? "מותן" : h < 1.2 ? "חזה" : h < 1.5 ? "כתף" : h < 2 ? "ראש" : "מעל הראש";
+
+const DIR_FULL = ["צפוני", "צפון-מזרחי", "מזרחי", "דרום-מזרחי", "דרומי", "דרום-מערבי", "מערבי", "צפון-מערבי"];
+const DIR_SHORT = ["צפ׳", "צפ׳-מז׳", "מז׳", "דר׳-מז׳", "דר׳", "דר׳-מע׳", "מע׳", "צפ׳-מע׳"];
+const octant = (deg: number) => Math.round((((deg % 360) + 360) % 360) / 45) % 8;
+export const dirFull = (deg: number) => DIR_FULL[octant(deg)];   // כיוון סוול
+export const dirShort = (deg: number) => DIR_SHORT[octant(deg)]; // כיוון רוח

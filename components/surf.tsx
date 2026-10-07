@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { DEFAULT_SPOT_ID, SURF_SPOTS, spotById, surfSiteUrl, type Surf } from "@/lib/surf-spots";
+import { DEFAULT_SPOT_ID, SURF_SPOTS, dirFull, dirShort, spotById, surfSiteUrl, waveLabel, type Surf } from "@/lib/surf-spots";
 
 const STORE_KEY = "surf-spot";
 const REFRESH_MS = 60 * 60 * 1000; // פעם בשעה
@@ -99,7 +99,7 @@ export function SurfBar({ initial }: { initial: Surf | null }) {
 
   return (
     <div className="relative mb-3 mt-1.5">
-      <div ref={barRef} className="flex flex-wrap items-center gap-1.5 max-[399px]:gap-1" aria-busy={busy}>
+      <div ref={barRef} className="flex flex-nowrap items-center gap-1.5 overflow-x-auto [scrollbar-width:none] max-[399px]:gap-1" aria-busy={busy}>
         <a
           href={surfSiteUrl(s.spotId)}
           target="_blank"
@@ -108,18 +108,33 @@ export function SurfBar({ initial }: { initial: Surf | null }) {
           className="glass press inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[14px] font-semibold text-navy max-[399px]:gap-1 max-[399px]:px-1.5"
         >
           <I d={WAVE_ICON} className="h-4 w-4 text-royal" />
-          <span>גלישה</span>
           <span className={`h-1.5 w-1.5 rounded-full ${waveTone(s.wave)}`} />
-          <span dir="ltr" className="tabular font-bold">{s.wave.toFixed(1)}m · {Math.round(s.period)}s</span>
+          <span dir="ltr" className="tabular font-bold">{s.wave.toFixed(1)}m</span>
+          <span className="font-normal text-muted">{waveLabel(s.wave)}</span>
+          <span dir="ltr" className="tabular font-bold">· {Math.round(s.period)}s</span>
+          {s.swell != null && (
+            <>
+              <span className="h-3 w-px bg-line" />
+              <span className="text-muted">סוול</span>
+              <span dir="ltr" className="tabular inline-flex items-center gap-0.5 font-bold text-royal">
+                {s.swellDir != null && <WindArrow from={s.swellDir} />}
+                {s.swell.toFixed(2)}m{s.swellPeriod != null && ` · ${s.swellPeriod.toFixed(1)}s`}
+              </span>
+              {s.swellDir != null && <span className="text-muted">{dirFull(s.swellDir)}</span>}
+            </>
+          )}
           <span className="h-3 w-px bg-line" />
+          <span className="text-muted">רוח</span>
           <span dir="ltr" className="tabular inline-flex items-center gap-0.5 font-bold text-royal"><WindArrow from={s.windDir} />{Math.round(s.wind)}kt</span>
+          <span className="text-muted">{dirShort(s.windDir)}{s.gust != null && " · משבים"}</span>
+          {s.gust != null && <span dir="ltr" className="tabular font-bold">{Math.round(s.gust)}</span>}
         </a>
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-label={`אזור גלישה: ${s.spot}. לחץ לשינוי`}
-          className="inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2 py-0.5 text-[15px] font-semibold text-white backdrop-blur max-[399px]:px-1.5"
+          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2 py-0.5 text-[15px] font-semibold text-white backdrop-blur max-[399px]:px-1.5"
         >
           <I d={WAVE_ICON} className="h-4 w-4 text-gold" />
           {s.spot}
