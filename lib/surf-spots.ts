@@ -23,18 +23,32 @@ export const spotById = (id: number) => SURF_SPOTS.find((s) => s.id === id);
 /** 4surfers — אתר תחזית הגלישה המקצועי בישראל (מצלמות, גלים, רוח, גאות ושפל) — לאזור של החוף שנבחר */
 export const surfSiteUrl = (id: number) => `https://www.4surfers.co.il/#/beachArea?beachAreaId=${spotById(id)?.area ?? id}`;
 
+/** שעה אחת בתחזית הים */
+export type SurfHour = {
+  time: string;          // YYYY-MM-DDTHH:00 (שעון ישראל)
+  wave: number;          // גובה גל משמעותי, מ׳
+  period: number;        // מחזור גל, שניות
+  swell?: number;        // גובה סוול, מ׳
+  swellPeriod?: number;  // שניות
+  swellDir?: number;     // מעלות — מאיפה הסוול מגיע
+  windWave?: number;     // גלי רוח, מ׳
+  wind: number;          // קשר
+  windDir: number;       // מעלות — מאיפה הרוח נושבת
+  gust?: number;         // משבים, קשר
+  water?: number;        // טמפרטורת מים, °C
+  tide?: number;         // גובה פני הים (גאות ושפל), מ׳
+};
+
+/** תחזית ים ל-24 שעות (מ-2 שעות לפני עכשיו), לחוף שנבחר */
 export type Surf = {
   spotId: number;
   spot: string;
-  wave: number;    // מ׳
-  period: number;  // שניות
-  wind: number;    // קשר
-  windDir: number; // מעלות — מאיפה הרוח נושבת
-  gust?: number;        // משבים, קשר
-  swell?: number;       // גובה סוול, מ׳
-  swellPeriod?: number; // שניות
-  swellDir?: number;    // מעלות — מאיפה הסוול מגיע
+  now: number;           // אינדקס השעה הנוכחית ב-hours
+  hours: SurfHour[];
 };
+
+/** עוצמת גל (שטף אנרגיה) ב-kW למטר חוף: P ≈ 0.49·H²·T */
+export const wavePower = (h: number, t: number) => 0.49 * h * h * t;
 
 /** תיאור גובה הגל ביחס לגוף */
 export const waveLabel = (h: number) =>
