@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { DEFAULT_SPOT_ID, SURF_SPOTS, dirFull, dirShort, spotById, waveLabel, wavePower, type Surf, type SurfHour } from "@/lib/surf-spots";
+import { DEFAULT_SPOT_ID, SURF_SPOTS, dirShort, spotById, waveLabel, wavePower, type Surf, type SurfHour } from "@/lib/surf-spots";
 
 const STORE_KEY = "surf-spot";
 const REFRESH_MS = 30 * 60 * 1000; // רענון כל חצי שעה
@@ -50,7 +50,7 @@ const dayName = (t: string) => new Intl.DateTimeFormat("he-IL", { weekday: "shor
 /* ---------------- גרף ---------------- */
 
 const VW = 360; // רוחב ה-viewBox
-const VH = 84;  // גובה אזור הגלים
+const VH = 70;  // גובה אזור הגלים
 
 /** קו חלק (Catmull-Rom → Bezier) דרך הנקודות */
 function smooth(pts: [number, number][]) {
@@ -108,7 +108,7 @@ function SeaChart({ hours, now, sel, onSel }: { hours: SurfHour[]; now: number; 
           e.preventDefault();
         }}
       >
-        <svg viewBox={`0 0 ${VW} ${VH}`} preserveAspectRatio="none" className="block h-[84px] w-full overflow-visible" aria-hidden>
+        <svg viewBox={`0 0 ${VW} ${VH}`} preserveAspectRatio="none" className="block h-[70px] w-full overflow-visible" aria-hidden>
           <defs>
             <linearGradient id="sea-fill" x1="0" x2="0" y1="0" y2="1">
               <stop offset="0" stopColor={C_WAVE} stopOpacity="0.55" />
@@ -141,11 +141,11 @@ function SeaChart({ hours, now, sel, onSel }: { hours: SurfHour[]; now: number; 
         )}
 
         {/* רצועת רוח — עמודות לפי עוצמה, סימון משבים */}
-        <div className="relative mt-1 h-[22px]" aria-hidden>
+        <div className="relative mt-1 h-4" aria-hidden>
           {hours.map((hr, i) => (
             <span key={i} className="absolute bottom-0 -translate-x-1/2" style={{ left: pct(i), width: `${70 / n}%` }}>
-              {hr.gust != null && <span className="absolute inset-x-0 h-px bg-white/55" style={{ bottom: `${(hr.gust / windMax) * 22}px` }} />}
-              <span className={`block rounded-t-[2px] ${i === sel ? "bg-white/90" : "bg-white/35"}`} style={{ height: `${Math.max(2, (hr.wind / windMax) * 22)}px` }} />
+              {hr.gust != null && <span className="absolute inset-x-0 h-px bg-white/55" style={{ bottom: `${(hr.gust / windMax) * 16}px` }} />}
+              <span className={`block rounded-t-[2px] ${i === sel ? "bg-white/90" : "bg-white/35"}`} style={{ height: `${Math.max(2, (hr.wind / windMax) * 16)}px` }} />
             </span>
           ))}
         </div>
@@ -277,72 +277,65 @@ export function SurfBar({ initial }: { initial: Surf | null }) {
             {isNow ? <span className="live-dot h-1.5 w-1.5 rounded-full bg-up" /> : <span aria-hidden>↺</span>}
             <span>{isNow ? "עכשיו" : dayName(h.time)}</span>
             <span dir="ltr" className="tabular">{hh(h.time)}:00</span>
+            {isNow && <span aria-hidden className="text-white/50">⟷</span>}
           </button>
         </div>
 
         {/* נתוני השעה הנבחרת */}
-        <div className="mt-2 flex items-end justify-between gap-2" aria-live="polite">
+        <div className="mt-1.5 flex items-end justify-between gap-2" aria-live="polite">
           <div className="flex items-end gap-2">
-            <span dir="ltr" className="tabular text-[34px] font-extrabold leading-none tracking-tight">{h.wave.toFixed(1)}<span className="text-[16px] font-bold text-white/70">m</span></span>
+            <span dir="ltr" className="tabular text-[32px] font-extrabold leading-none tracking-tight max-[399px]:text-[28px]">{h.wave.toFixed(1)}<span className="text-[16px] font-bold text-white/70">m</span></span>
             <span className="mb-0.5 flex flex-col text-[12px] leading-tight">
               <span className="flex items-center gap-1 font-semibold"><span className={`h-2 w-2 rounded-full ${waveTone(h.wave)}`} />{waveLabel(h.wave)}</span>
-              <span className="text-white/60">גובה גל</span>
+              <span className="flex items-center gap-1 whitespace-nowrap text-white/60"><span className="h-0.5 w-2.5 rounded-full" style={{ background: C_WAVE }} />גובה גל</span>
             </span>
           </div>
-          <dl className="grid grid-cols-3 gap-1.5 text-center">
+          <dl className="grid grid-cols-3 gap-1.5 text-center max-[399px]:gap-1">
             {[
               ["מחזור", `${h.period.toFixed(1)}s`],
               ["עוצמה", `${power < 10 ? power.toFixed(1) : Math.round(power)} kW/m`],
               ["מים", h.water != null ? `${h.water.toFixed(1)}°` : "—"],
             ].map(([k, v]) => (
-              <div key={k} className="rounded-lg bg-white/[0.07] px-1.5 py-1">
+              <div key={k} className="whitespace-nowrap rounded-lg bg-white/[0.07] px-1.5 py-1 max-[399px]:px-1">
                 <dt className="text-[10px] text-white/55">{k}</dt>
-                <dd dir="ltr" className="tabular text-[13px] font-bold leading-tight">{v}</dd>
+                <dd dir="ltr" className="tabular text-[13px] font-bold leading-tight max-[399px]:text-[12px]">{v}</dd>
               </div>
             ))}
           </dl>
         </div>
 
-        {/* מקרא */}
-        <div className="mt-2 flex items-center gap-3 text-[10.5px] text-white/70" aria-hidden>
-          <span className="inline-flex items-center gap-1"><span className="h-0.5 w-3 rounded-full" style={{ background: C_WAVE }} />גל</span>
-          <span className="inline-flex items-center gap-1"><span className="h-0.5 w-3 rounded-full" style={{ background: `repeating-linear-gradient(90deg, ${C_SWELL} 0 4px, transparent 4px 6px)` }} />סוול</span>
-          <span className="inline-flex items-center gap-1"><span className="h-2 w-1 rounded-t-[1px] bg-white/45" />רוח</span>
-          <span className="inline-flex items-center gap-1"><span className="h-px w-2 bg-white/60" />משבים</span>
-          <span className="ms-auto text-white/45">גררו לשינוי שעה</span>
-        </div>
-
-        <div className="mt-1">
+        <div className="mt-2">
           <SeaChart hours={s.hours} now={now} sel={sel} onSel={setPicked} />
         </div>
 
-        {/* פירוט: סוול, רוח, גאות */}
-        <div className="mt-2 grid grid-cols-3 gap-1.5 text-[11.5px] leading-tight">
-          <div className="rounded-lg bg-white/[0.07] px-2 py-1.5">
-            <div className="flex items-center gap-1 text-white/55"><span className="h-0.5 w-2.5 rounded-full" style={{ background: C_SWELL }} />סוול</div>
-            {h.swell != null ? (
-              <>
-                <div dir="ltr" className="tabular flex items-center justify-end gap-1 font-bold">
-                  {h.swellDir != null && <Arrow from={h.swellDir} />}{h.swell.toFixed(1)}m{h.swellPeriod != null && ` · ${h.swellPeriod.toFixed(0)}s`}
-                </div>
-                {h.swellDir != null && <div className="text-white/60">{dirFull(h.swellDir)}</div>}
-              </>
-            ) : <div className="text-white/60">—</div>}
-          </div>
-          <div className="rounded-lg bg-white/[0.07] px-2 py-1.5">
-            <div className="text-white/55">רוח</div>
-            <div dir="ltr" className="tabular flex items-center justify-end gap-1 font-bold"><Arrow from={h.windDir} />{Math.round(h.wind)}kt</div>
-            <div className="text-white/60">{dirShort(h.windDir)}{h.gust != null && ` · משבים ${Math.round(h.gust)}`}</div>
-          </div>
-          <div className="rounded-lg bg-white/[0.07] px-2 py-1.5">
-            <div className="text-white/55">גאות ושפל</div>
-            {h.tide != null ? (
-              <>
-                <div dir="ltr" className="tabular font-bold text-end">{h.tide >= 0 ? "+" : ""}{h.tide.toFixed(2)}m</div>
-                <div className="text-white/60">{next?.tide == null ? "" : next.tide > h.tide ? "▲ עולה" : "▼ יורד"}</div>
-              </>
-            ) : <div className="text-white/60">—</div>}
-          </div>
+        {/* פירוט בשורה אחת: סוול · רוח · גאות */}
+        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 rounded-lg bg-white/[0.07] px-2 py-1 text-[11px] leading-snug">
+          {h.swell != null && (
+            <span className="inline-flex items-center gap-1">
+              <span className="h-0.5 w-2.5 rounded-full" style={{ background: C_SWELL }} />
+              <span className="text-white/60">סוול</span>
+              <span dir="ltr" className="tabular inline-flex items-center gap-0.5 font-bold">
+                {h.swellDir != null && <Arrow from={h.swellDir} />}{h.swell.toFixed(1)}m{h.swellPeriod != null && `·${h.swellPeriod.toFixed(0)}s`}
+              </span>
+              {h.swellDir != null && <span className="text-white/60">{dirShort(h.swellDir)}</span>}
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-1 rounded-t-[1px] bg-white/45" />
+            <span className="text-white/60">רוח</span>
+            <span dir="ltr" className="tabular inline-flex items-center gap-0.5 font-bold"><Arrow from={h.windDir} />{Math.round(h.wind)}kt</span>
+            <span className="text-white/60">{dirShort(h.windDir)}</span>
+            {h.gust != null && <span className="inline-flex items-center gap-1 text-white/60"><span className="h-px w-2 bg-white/60" />משבים <b dir="ltr" className="tabular text-white">{Math.round(h.gust)}</b></span>}
+          </span>
+          {h.tide != null && (
+            <>
+              <span className="inline-flex items-center gap-1">
+                <span className="text-white/60">גאות</span>
+                <span dir="ltr" className="tabular font-bold">{h.tide >= 0 ? "+" : ""}{h.tide.toFixed(2)}m</span>
+                {next?.tide != null && <span className="text-white/60">{next.tide > h.tide ? "▲" : "▼"}</span>}
+              </span>
+            </>
+          )}
         </div>
       </section>
 
