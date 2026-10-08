@@ -7,10 +7,10 @@ export function Section({ id, eyebrow, title, action, children, tight = false }:
   id: string; eyebrow: string; title: string; action?: React.ReactNode; children: React.ReactNode; tight?: boolean;
 }) {
   return (
-    <section id={id} className={`reveal mx-auto w-full max-w-5xl px-4 ${tight ? "pt-6" : "pt-12"}`} aria-labelledby={`${id}-title`}>
-      <div className="mb-5 flex items-end justify-between gap-4">
+    <section id={id} className={`reveal mx-auto w-full max-w-5xl px-4 ${tight ? "pt-1" : "pt-12"}`} aria-labelledby={`${id}-title`}>
+      <div className={`${tight ? "mb-2" : "mb-5"} flex items-end justify-between gap-4`}>
         <div>
-          <p className="mb-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-royal">
+          <p className={`mb-1 flex items-center gap-2 ${tight ? "text-[13.2px]" : "text-[11px]"} font-medium uppercase tracking-[0.2em] text-royal`}>
             <span className="h-px w-6 bg-gradient-to-l from-gold to-royal/30" />
             {eyebrow}
           </p>
