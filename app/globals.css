@@ -187,7 +187,7 @@ body::after {
 
 /* דגל ישראל מתנופף (components/flag.tsx) — רצועות בגל עם הפרש פאזה, וצל/אור באותו קצב */
 .flag-slice { animation: flag-wave 2.6s ease-in-out infinite; animation-delay: var(--d); }
-.flag-shade { animation: flag-shade 2.6s ease-in-out infinite; animation-delay: var(--d); }
+.flag-shade { opacity: 0; animation: flag-shade 2.6s ease-in-out infinite; animation-delay: var(--d); } /* שקוף כשאין אנימציה (הפחתת תנועה) */
 @keyframes flag-wave {
   0%, 100% { transform: translateY(calc(var(--a) * -1)); }
   50% { transform: translateY(var(--a)); }

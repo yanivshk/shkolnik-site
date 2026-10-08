@@ -50,9 +50,9 @@ export function WorldClocks({ clocks }: { clocks: { label: string; tz: string; p
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${c.place} — מידע בגוגל`}
-            className="flex flex-col items-center rounded-xl border border-white/25 bg-white/10 px-1 py-1.5 backdrop-blur"
+            className="flex flex-col items-center rounded-xl border border-white/25 bg-white/10 px-1 py-0.5 backdrop-blur"
           >
-            <span className="flex items-center gap-1 font-latin text-[11px] font-bold tracking-[0.12em] text-gold">
+            <span className="flex items-center gap-1 font-latin text-[11px] font-bold leading-4 tracking-[0.12em] text-gold">
               <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
               {c.label}
             </span>
