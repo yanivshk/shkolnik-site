@@ -124,7 +124,7 @@ export default async function Home() {
               </div>
             )}
             {fx.length > 0 && (
-              <div className="mt-1.5 grid max-w-md grid-cols-3 gap-1.5">
+              <div className="mt-1 grid max-w-md grid-cols-3 gap-1.5">
                 {fx.map((q) => <FxChip key={q.symbol} q={q} />)}
               </div>
             )}
