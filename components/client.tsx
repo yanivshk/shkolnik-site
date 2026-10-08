@@ -38,7 +38,7 @@ export function Greeting({ name }: { name: string }) {
 export function WorldClocks({ clocks }: { clocks: { label: string; tz: string; place: string }[] }) {
   const now = useNow(15_000);
   return (
-    <div dir="ltr" className="mb-3 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${clocks.length}, minmax(0, 1fr))` }} aria-label="שעוני עולם">
+    <div dir="ltr" className="mb-1 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${clocks.length}, minmax(0, 1fr))` }} aria-label="שעוני עולם">
       {clocks.map((c) => {
         const t = now
           ? new Intl.DateTimeFormat("en-GB", { timeZone: c.tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(now)

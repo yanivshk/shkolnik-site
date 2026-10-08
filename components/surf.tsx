@@ -244,7 +244,7 @@ export function SurfBar({ initial }: { initial: Surf | null }) {
   const isNow = sel === now;
 
   return (
-    <div className="relative mb-3 mt-1.5">
+    <div className="relative mt-1">
       <section
         ref={barRef}
         aria-busy={busy}
