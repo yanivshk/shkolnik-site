@@ -24,7 +24,7 @@ function PulseChip({ q }: { q: Quote }) {
   const href = quoteLink(q.symbol);
   const Tag = href ? "a" : "span";
   return (
-    <Tag {...(href ? { href, target: "_blank", rel: "noopener noreferrer" } : {})} className="glass flex min-w-0 flex-col items-center justify-center whitespace-nowrap rounded-xl px-1 py-1 text-[14px] leading-[1.2] text-navy">
+    <Tag {...(href ? { href, target: "_blank", rel: "noopener noreferrer" } : {})} className="glass flex min-w-0 flex-col items-center justify-center whitespace-nowrap rounded-xl px-1 py-0.5 text-[14px] leading-[1.12] text-navy">
       {/* שתי שורות — שם ומעליו השינוי — כדי שהטקסט לא ייגע בשולי האריח */}
       <span className="font-semibold">{PULSE_SHORT[q.symbol] ?? q.name}</span>
       <span dir="ltr" className={`tabular font-bold ${up ? "text-up" : "text-down"}`}>{formatPct(q.changePct)}</span>
@@ -36,7 +36,7 @@ function PulseChip({ q }: { q: Quote }) {
 function FxChip({ q }: { q: Quote }) {
   const up = q.changePct >= 0;
   return (
-    <a href={`https://www.google.com/search?hl=he&q=${encodeURIComponent(`${q.name} ILS`)}`} target="_blank" rel="noopener noreferrer" className="glass flex min-w-0 flex-col items-center justify-center whitespace-nowrap rounded-xl px-1 py-1 text-[14px] leading-[1.2] text-navy" aria-label={`${q.name} ${q.price.toFixed(3)} שקל`}>
+    <a href={`https://www.google.com/search?hl=he&q=${encodeURIComponent(`${q.name} ILS`)}`} target="_blank" rel="noopener noreferrer" className="glass flex min-w-0 flex-col items-center justify-center whitespace-nowrap rounded-xl px-1 py-0.5 text-[14px] leading-[1.12] text-navy" aria-label={`${q.name} ${q.price.toFixed(3)} שקל`}>
       <span dir="ltr" className="flex items-baseline gap-1.5">
         <span className="font-semibold">{q.name}</span>
         <span className="tabular font-bold">{q.price.toFixed(3)}</span>
