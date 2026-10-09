@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { addDays, type Broadcast, type BroadcastDay } from "@/lib/broadcasts";
 import { RealBasketball, RealSoccerBall } from "@/components/maccabi";
+import { eventFromBroadcast } from "@/lib/ics";
 
 const I = ({ d }: { d: string }) => (
   <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -21,9 +22,8 @@ function shortDate(iso: string) {
 
 /** קישור לקובץ יומן (.ics) של המשחק — באייפון נפתח "הוסף ליומן" */
 function icsHref(b: Broadcast) {
-  const icon = b.sport === "soccer" ? "⚽ " : b.sport === "basketball" ? "🏀 " : "";
-  const q = new URLSearchParams({ d: b.date, t: b.time, title: `${icon}${b.team} – ${b.opponent}${b.home ? " (בית)" : ""}`, ch: b.channels.join(", "), lg: b.league, s: b.sport ?? "" });
-  return `/api/ics?${q}`;
+  const e = eventFromBroadcast(b);
+  return `/api/ics?${new URLSearchParams({ d: e.date, t: e.time, title: e.title, ch: e.where, lg: e.league, s: e.sport })}`;
 }
 
 function Row({ b, i }: { b: Broadcast; i: number }) {
