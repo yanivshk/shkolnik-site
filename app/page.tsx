@@ -102,7 +102,7 @@ export default async function Home() {
           <div className="maccabi-stripes absolute inset-0 -z-10" />
           <div className="absolute -left-24 -top-24 -z-10 h-72 w-72 rounded-full bg-gold/30 blur-3xl" />
 
-          <div className="mx-auto w-full max-w-5xl px-4 pb-4" style={{ paddingTop: "calc(80px + env(safe-area-inset-top, 0px))" }}>
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-[var(--hg)] px-4 pb-4 [--hg:16px] [&>*]:my-0" style={{ paddingTop: "calc(80px + env(safe-area-inset-top, 0px))" }}>
             <p className="relative mb-2 flex items-center gap-2 text-[12px] font-medium text-white/80">
               <span className="h-0.5 w-8 rounded-full bg-gold" />
               {hebrewDate()}
@@ -132,7 +132,7 @@ export default async function Home() {
         </section>
 
         {/* שווקים */}
-        <Section id="markets" title="מניות ומדדים" tight>
+        <Section id="markets" title="מניות ומדדים" tight titleSize={29}>
           {topQuotes.length ? (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
               {topQuotes.map((q) => <QuoteTile key={q.symbol} q={q} showCurrency={isStock(q.symbol)} />)}

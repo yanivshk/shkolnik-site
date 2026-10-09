@@ -3,8 +3,8 @@ import { currencySymbol, formatGameTime, formatPct, normalizePrice, priceDigits,
 import { CountUp } from "./client";
 import { quoteLink } from "@/lib/config";
 
-export function Section({ id, eyebrow, title, action, children, tight = false }: {
-  id: string; eyebrow?: string; title: string; action?: React.ReactNode; children: React.ReactNode; tight?: boolean;
+export function Section({ id, eyebrow, title, action, children, tight = false, titleSize = 36 }: {
+  id: string; eyebrow?: string; title: string; action?: React.ReactNode; children: React.ReactNode; tight?: boolean; titleSize?: number;
 }) {
   return (
     <section id={id} className={`reveal mx-auto w-full max-w-5xl px-4 ${tight ? "pt-2" : "pt-12"}`} aria-labelledby={`${id}-title`}>
@@ -16,7 +16,7 @@ export function Section({ id, eyebrow, title, action, children, tight = false }:
               {eyebrow}
             </p>
           )}
-          <h2 id={`${id}-title`} className="text-[36px] font-extrabold leading-none tracking-tight">{title}</h2>
+          <h2 id={`${id}-title`} className="font-extrabold leading-none tracking-tight" style={{ fontSize: titleSize }}>{title}</h2>
         </div>
         {action}
       </div>
