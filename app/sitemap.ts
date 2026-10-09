@@ -8,6 +8,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ({ url: `${SITE_URL}${path}`, lastModified: now, changeFrequency, priority });
   return [
     { url: SITE_URL, lastModified: now, changeFrequency: "daily", priority: 1 },
+    page("/sea", 0.6, "daily"),
     page("/tomer-shkolnik", 0.8),
     page("/guy-shkolnik", 0.8),
     page("/noa-shkolnik", 0.8),
