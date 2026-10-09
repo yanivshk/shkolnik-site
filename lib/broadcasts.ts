@@ -1,16 +1,17 @@
 /** לוח שידורי משחקים בטלוויזיה — ערוץ הספורט (Sport5) וספורט 1 (Charlton), ללא מפתח. משותף לדף הבית ול-API. */
 
 import { TZ } from "./config";
+import { classifySport, isExcluded, resolveSport, type Sport, type SportEvidence } from "./sport-classify";
 
-export type Sport = "soccer" | "basketball";
+export type { Sport };
 
 export type Broadcast = {
   id: string;
   date: string; // YYYY-MM-DD (שעון ישראל)
   time: string; // HH:MM
-  sport: Sport;
+  sport: Sport | null; // null = לא ניתן לקבוע בוודאות — מוצג בלי אייקון ענף, לא בניחוש
   team: string; // הקבוצה שלנו
-  logo: string; // לוגו הקבוצה שלנו בענף הזה
+  logo?: string; // לוגו הקבוצה שלנו בענף הזה (רק כשהענף ידוע)
   home: boolean; // משחק בית
   opponent: string;
   league: string;
@@ -33,9 +34,6 @@ const TEAMS: { name: string; logos: Partial<Record<Sport, string>>; re: RegExp }
   { name: "נבחרת ישראל", logos: { soccer: "/teams/israel-fc.png", basketball: "/teams/israel-bc.png" }, re: /^(נבחרת )?ישראל$/ },
 ];
 
-const SKIP = /נשים|נוער|נערים|נערות|צעירות|עד גיל|U-?\d\d|כדוריד|כדורעף|פוטסל|חופים|טניס|פאדל|אולפן|תקציר|סיכום|שידור חוזר/;
-const BASKETBALL = /כדורסל|יורוליג|יורוקאפ|ווינר|FIBA|יורובאסקט|EuroBasket/i;
-const SOCCER = /כדורגל|ליגת העל|ליגה לאומית|ליגת האומות|ליגת האלופות|הליגה האירופית|קונפרנס|גביע המדינה|גביע הטוטו|אלוף האלופות|סופר ?קאפ|מוקדמות|מונדיאל|יורו|ידידות/;
 
 /* ---------------- תאריכים ---------------- */
 
@@ -63,32 +61,56 @@ const clean = (s: string) =>
 
 type Raw = { date: string; time: string; channel: string; league: string; title: string };
 
-/** "בית - חוץ" → משחק של אחת הקבוצות שלנו, או null */
-function toBroadcast(r: Raw): Broadcast | null {
-  const all = `${r.league} ${r.title}`;
-  if (SKIP.test(all)) return null;
-  const sport: Sport | null = BASKETBALL.test(all) ? "basketball" : SOCCER.test(all) ? "soccer" : null;
-  if (!sport) return null;
+/** שורה שזוהתה כמשחק של אחת הקבוצות שלנו — לפני ההחלטה על הענף */
+type Candidate = Raw & { team: (typeof TEAMS)[number]; home: boolean; opponent: string; evidence: SportEvidence | null };
+
+/** "בית - חוץ" → משחק של אחת הקבוצות שלנו (בלי לקבוע עדיין ענף), או null */
+function toCandidate(r: Raw): Candidate | null {
+  if (isExcluded(r.league, r.title)) return null;
   const sides = r.title.split(",")[0].replace(/\s*\([^)]*\)\s*$/, "").split(" - ").map((s) => s.trim());
   if (sides.length !== 2 || !sides[0] || !sides[1]) return null;
-  const match = (s: string) => TEAMS.find((t) => t.logos[sport] && t.re.test(s));
-  const home = match(sides[0]);
-  const away = match(sides[1]);
-  const ours = home ?? away;
-  if (!ours) return null;
-  const opponent = home ? sides[1] : sides[0];
-  return {
-    id: `${r.date}-${ours.name}-${opponent}`,
-    date: r.date,
-    time: r.time,
-    sport,
-    team: ours.name,
-    logo: ours.logos[sport]!,
-    home: !!home,
-    opponent,
-    league: r.league.replace(/\s*\d{4}\/\d{2,4}$/, "").trim(),
-    channels: [r.channel],
-  };
+  const home = TEAMS.find((t) => t.re.test(sides[0]));
+  const away = TEAMS.find((t) => t.re.test(sides[1]));
+  const team = home ?? away;
+  if (!team) return null;
+  return { ...r, team, home: !!home, opponent: home ? sides[1] : sides[0], evidence: classifySport(r.league, r.title) };
+}
+
+/** מפתח לאיחוד אותו משחק מכמה ערוצים/מקורות (בלי תלות בכתיב: ת"א/תל אביב, גרשיים) */
+const norm = (s: string) => s.replace(/["״׳']/g, "").replace(/תל אביב/g, "תא").replace(/\s+/g, " ").trim();
+
+/** מאחד שורות של אותו משחק, ומחליט על הענף מכל הראיות יחד */
+function toBroadcasts(raws: Raw[]): Broadcast[] {
+  const groups = new Map<string, Candidate[]>();
+  for (const r of raws) {
+    const c = toCandidate(r);
+    if (!c) continue;
+    const key = `${c.date}|${c.team.name}|${norm(c.opponent)}`;
+    groups.set(key, [...(groups.get(key) ?? []), c]);
+  }
+  const out: Broadcast[] = [];
+  for (const [key, cs] of groups) {
+    const sport = resolveSport(cs.map((c) => c.evidence));
+    const team = cs[0].team;
+    // ענף לא ידוע: קבוצה שעוקבים אחריה רק בענף אחד (מכבי חיפה, בית"ר) — לא מציגים, אולי זה בכלל הענף השני
+    if (!sport && Object.keys(team.logos).length < 2) continue;
+    if (sport && !team.logos[sport]) continue; // ענף שלא עוקבים אחריו בקבוצה הזו
+    if (!sport) console.warn(`[broadcasts] לא ניתן לקבוע ענף: ${key}`, cs.map((c) => `${c.channel}: ${c.league} | ${c.title}`));
+    const best = cs.find((c) => c.evidence?.by === "explicit") ?? cs.find((c) => c.evidence) ?? cs[0];
+    out.push({
+      id: `${key}|${sport ?? "?"}`,
+      date: best.date,
+      time: cs.map((c) => c.time).sort()[0],
+      sport,
+      team: team.name,
+      logo: sport ? team.logos[sport] : undefined,
+      home: best.home,
+      opponent: best.opponent,
+      league: best.league.replace(/\s*\d{4}\/\d{2,4}$/, "").trim(),
+      channels: [...new Set(cs.map((c) => c.channel))],
+    });
+  }
+  return out;
 }
 
 /* ---------------- מקורות ---------------- */
@@ -128,21 +150,46 @@ async function sport5(date: string): Promise<Raw[]> {
   return out;
 }
 
+/**
+ * שמות ערוצי ספורט 1 לפי מזהה הבלוק (channel-N-container) — כפי שהם מופיעים בעמוד לוח השידורים שלהם.
+ * חשוב: מספר קובץ הלוגו (sport1-N-channel-logo) לא תואם את מספר הערוץ, ולכן לא משתמשים בו.
+ * הגיבוי נבדק מול האתר ב-10.2026.
+ */
+const SPORT1_CHANNELS_FALLBACK: Record<string, string> = { "1": "ספורט 6", "2": "ספורט 1", "3": "ספורט 2", "4": "ספורט 3", "5": "ספורט 4" };
+
+async function sport1Channels(): Promise<Record<string, string>> {
+  try {
+    const res = await fetch("https://sport1.maariv.co.il/broadcast-schedule/", {
+      headers: { "User-Agent": UA },
+      next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return SPORT1_CHANNELS_FALLBACK;
+    const html = await res.text();
+    const names: Record<string, string> = {};
+    for (const m of html.matchAll(/<h2[^>]*data-channel-id="(\d+)"[^>]*>\s*([^<]+?)\s*<\/h2>/g)) names[m[1]] = clean(m[2]);
+    return Object.keys(names).length ? names : SPORT1_CHANNELS_FALLBACK;
+  } catch {
+    return SPORT1_CHANNELS_FALLBACK;
+  }
+}
+
 /** ספורט 1: JSON שמכיל HTML — בלוק לכל ערוץ, שם המשחק + תיאור הליגה */
-async function sport1(date: string): Promise<Raw[]> {
+async function sport1(date: string, channels: Record<string, string>): Promise<Raw[]> {
   const body = await getText(`https://sport1.maariv.co.il/wp-json/sport1/v1/broadcast/day/${date}/?live=1`);
   if (!body) return [];
   let html: string;
   try { html = JSON.parse(body); } catch { return []; }
   if (typeof html !== "string") return [];
   const out: Raw[] = [];
-  const parts = html.split(/id="channel-\d+-container"/).slice(1);
+  const parts = html.split(/(?=id="channel-\d+-container")/).slice(1);
   for (const part of parts) {
-    const n = part.match(/channels-logo\/sport1-(\d+)-channel-logo/)?.[1];
-    if (!n) continue;
+    const id = part.match(/^id="channel-(\d+)-container"/)?.[1];
+    const channel = id ? channels[id] : undefined;
+    if (!channel) { console.warn(`[broadcasts] ערוץ ספורט 1 לא מוכר: ${id}`); continue; }
     const re = /show-starting-time">\s*(\d{1,2}:\d{2})[\s\S]*?show-name">([\s\S]*?)<\/p>\s*<p class="show-description">([\s\S]*?)<\/p>/g;
     for (const m of part.matchAll(re)) {
-      out.push({ date, time: m[1].padStart(5, "0"), channel: `ספורט ${n}`, league: clean(m[3]), title: clean(m[2]) });
+      out.push({ date, time: m[1].padStart(5, "0"), channel, league: clean(m[3]), title: clean(m[2]) });
     }
   }
   return out;
@@ -153,16 +200,9 @@ async function sport1(date: string): Promise<Raw[]> {
 export async function getBroadcasts(from: string, days = BROADCAST_DAYS): Promise<BroadcastDay> {
   if (process.env.MOCK_DATA === "1") return { from, days, items: mockBroadcasts(from) };
   const dates = Array.from({ length: days }, (_, i) => addDays(from, i));
-  const raws = (await Promise.all(dates.flatMap((d) => [sport5(d), sport1(d)]))).flat();
-  const byId = new Map<string, Broadcast>();
-  for (const r of raws) {
-    const b = toBroadcast(r);
-    if (!b) continue;
-    const prev = byId.get(b.id);
-    if (!prev) byId.set(b.id, b);
-    else if (!prev.channels.includes(b.channels[0])) prev.channels.push(b.channels[0]);
-  }
-  const items = [...byId.values()].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+  const s1Channels = await sport1Channels();
+  const raws = (await Promise.all(dates.flatMap((d) => [sport5(d), sport1(d, s1Channels)]))).flat();
+  const items = toBroadcasts(raws).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
   return { from, days, items };
 }
 
