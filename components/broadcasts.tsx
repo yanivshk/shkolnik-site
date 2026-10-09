@@ -19,6 +19,13 @@ function shortDate(iso: string) {
   return { day: dayFmt.format(new Date(`${iso}T12:00:00Z`)).replace("יום ", ""), date: `${d}.${m}` };
 }
 
+/** קישור לקובץ יומן (.ics) של המשחק — באייפון נפתח "הוסף ליומן" */
+function icsHref(b: Broadcast) {
+  const icon = b.sport === "soccer" ? "⚽ " : b.sport === "basketball" ? "🏀 " : "";
+  const q = new URLSearchParams({ d: b.date, t: b.time, title: `${icon}${b.team} – ${b.opponent}${b.home ? " (בית)" : ""}`, ch: b.channels.join(", "), lg: b.league, s: b.sport ?? "" });
+  return `/api/ics?${q}`;
+}
+
 function Row({ b, i }: { b: Broadcast; i: number }) {
   const { day, date } = shortDate(b.date);
   return (
@@ -27,10 +34,14 @@ function Row({ b, i }: { b: Broadcast; i: number }) {
         <span className="mb-0.5 inline-block rounded-md bg-gold/70 px-1.5 text-[12px] font-extrabold leading-5 text-navy">{day}</span>
         <span dir="ltr" className="tabular block font-semibold">{date}</span>
       </td>
-      {/* שורת רווח בגובה תג היום — כדי שהשעה תהיה באותו קו גובה של התאריך */}
+      {/* לחיצה על השעה מוסיפה את המשחק ליומן. אייקון היומן יושב בגובה תג היום — כדי שהשעה תהיה באותו קו גובה של התאריך */}
       <td dir="ltr" className="tabular whitespace-nowrap px-1 py-2.5 text-end font-bold text-navy sm:px-1.5 max-[399px]:px-0.5">
-        <span className="invisible mb-0.5 inline-block text-[12px] leading-5" aria-hidden>.</span>
-        <span className="block">{b.time}</span>
+        <a href={icsHref(b)} aria-label={`הוספה ליומן: ${b.team} נגד ${b.opponent}, ${b.time}`} title="הוספה ליומן" className="block">
+          <span className="mb-0.5 flex h-5 items-center justify-end text-royal/70" aria-hidden>
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18M12 13v5M9.5 15.5h5" /></svg>
+          </span>
+          <span className="block">{b.time}</span>
+        </a>
       </td>
       <td className="px-1 py-2.5 sm:px-1.5 max-[399px]:px-0.5">
         <span className="sr-only">{b.sport === "soccer" ? "כדורגל" : b.sport === "basketball" ? "כדורסל" : "ענף לא ידוע"}</span>

@@ -206,11 +206,16 @@ export async function getBroadcasts(from: string, days = BROADCAST_DAYS): Promis
   return { from, days, items };
 }
 
+function mockLiveTime() {
+  return new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(Date.now() - 40 * 60_000));
+}
+
 function mockBroadcasts(from: string): Broadcast[] {
   const row = (d: number, time: string, sport: Sport, team: string, logo: string, home: boolean, opponent: string, league: string, channels: string[]): Broadcast =>
     ({ id: `${d}-${team}-${opponent}`, date: addDays(from, d), time, sport, team, logo, home, opponent, league, channels });
   return [
-    row(0, "21:15", "basketball", 'מכבי ת"א', "/teams/maccabi-ta-bc.png", false, "פנאתינייקוס", "יורוליג", ["ערוץ הספורט"]),
+    // משחק "חי" בנתוני הדמה — התחיל לפני 40 דקות, כדי שאפשר יהיה לראות את רצועת המשחק החי
+    row(0, mockLiveTime(), "basketball", 'מכבי ת"א', "/teams/maccabi-ta-bc.png", false, "פנאתינייקוס", "יורוליג", ["ערוץ הספורט"]),
     row(1, "20:40", "basketball", 'הפועל ת"א', "/teams/hapoel-ta-bc.png", true, "עירוני נס ציונה", "גביע ווינר סל", ["ערוץ הספורט"]),
     row(2, "18:45", "basketball", 'מכבי ת"א', "/teams/maccabi-ta-bc.png", true, "הפועל ירושלים", "גביע ווינר סל", ["ערוץ הספורט"]),
     row(2, "21:45", "soccer", "נבחרת ישראל", "/teams/israel-fc.png", false, "אירלנד", "ליגת האומות", ["ערוץ הספורט", "ספורט 5+"]),

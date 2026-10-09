@@ -408,3 +408,42 @@ export async function getTeslaPhoto(): Promise<DailyPhoto | null> {
     link: info.descriptionurl ?? "https://commons.wikimedia.org",
   };
 }
+
+/* ---------------- "למה זה זז?" — כותרת שמסבירה תנועה חדה במניה ---------------- */
+
+/** תנועה יומית מעל הסף נחשבת חדה */
+export const MOVER_THRESHOLD = 2.5;
+
+export type MoverReason = { symbol: string; name: string; changePct: number; title: string; link: string; source: string };
+
+/** שאילתת חיפוש חדשות לכל נייר: בעברית לבורסה בת"א, באנגלית לוול סטריט */
+function moverQuery(q: Quote): { q: string; he: boolean } {
+  if (q.symbol.endsWith(".TA")) return { q: `${q.name.replace(/[-–]?\s*\d+$/, "").trim()} מניה`, he: true };
+  if (q.symbol === "^GSPC" || q.symbol === "^IXIC") return { q: `${q.symbol === "^GSPC" ? "S&P 500" : "Nasdaq"} stocks today`, he: false };
+  if (q.symbol === "BTC-USD") return { q: "bitcoin price", he: false };
+  return { q: `${q.name.split(" ·")[0]} stock`, he: false };
+}
+
+/** עד 3 הניירות שזזו הכי חזק היום, כל אחד עם הכותרת העדכנית ביותר שמסבירה את התנועה */
+export async function getMoverReasons(quotes: Quote[]): Promise<MoverReason[]> {
+  const movers = quotes
+    .filter((q) => (MOCK || Math.abs(q.changePct) >= MOVER_THRESHOLD) && !q.symbol.includes("=X"))
+    .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
+    .slice(0, 3);
+  if (MOCK) {
+    return movers.slice(0, 2).map((q) => ({ symbol: q.symbol, name: q.name, changePct: q.changePct, title: `${q.name}: הדוח הרבעוני עקף את התחזיות והמניה מזנקת`, link: "https://news.google.com", source: "Reuters" }));
+  }
+  const out = await Promise.all(
+    movers.map(async (m): Promise<MoverReason | null> => {
+      const { q, he } = moverQuery(m);
+      const url = `https://news.google.com/rss/search?q=${encodeURIComponent(`${q} when:2d`)}&${he ? "hl=he&gl=IL&ceid=IL:he" : "hl=en-US&gl=US&ceid=US:en"}`;
+      const items = await getFeed({ name: "", url }, 5);
+      const n = items[0];
+      if (!n) return null;
+      // ב-Google News הכותרת מגיעה כ"כותרת - מקור"
+      const cut = n.title.lastIndexOf(" - ");
+      return { symbol: m.symbol, name: m.name, changePct: m.changePct, title: cut > 20 ? n.title.slice(0, cut) : n.title, source: cut > 20 ? n.title.slice(cut + 3) : "", link: n.link };
+    }),
+  );
+  return out.filter(Boolean) as MoverReason[];
+}
