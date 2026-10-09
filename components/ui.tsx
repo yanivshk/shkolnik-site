@@ -4,16 +4,18 @@ import { CountUp } from "./client";
 import { quoteLink } from "@/lib/config";
 
 export function Section({ id, eyebrow, title, action, children, tight = false }: {
-  id: string; eyebrow: string; title: string; action?: React.ReactNode; children: React.ReactNode; tight?: boolean;
+  id: string; eyebrow?: string; title: string; action?: React.ReactNode; children: React.ReactNode; tight?: boolean;
 }) {
   return (
-    <section id={id} className={`reveal mx-auto w-full max-w-5xl px-4 ${tight ? "pt-0" : "pt-12"}`} aria-labelledby={`${id}-title`}>
+    <section id={id} className={`reveal mx-auto w-full max-w-5xl px-4 ${tight ? "pt-2" : "pt-12"}`} aria-labelledby={`${id}-title`}>
       <div className={`${tight ? "mb-1" : "mb-5"} flex items-end justify-between gap-4`}>
         <div>
-          <p className={`${tight ? "mb-0 text-[13.2px] leading-tight" : "mb-1 text-[11px]"} flex items-center gap-2 font-medium uppercase tracking-[0.2em] text-royal`}>
-            <span className="h-px w-6 bg-gradient-to-l from-gold to-royal/30" />
-            {eyebrow}
-          </p>
+          {eyebrow && (
+            <p className="mb-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-royal">
+              <span className="h-px w-6 bg-gradient-to-l from-gold to-royal/30" />
+              {eyebrow}
+            </p>
+          )}
           <h2 id={`${id}-title`} className="text-[36px] font-extrabold leading-none tracking-tight">{title}</h2>
         </div>
         {action}

@@ -132,7 +132,7 @@ export default async function Home() {
         </section>
 
         {/* שווקים */}
-        <Section id="markets" eyebrow="Markets" title="מניות ומדדים" tight>
+        <Section id="markets" title="מניות ומדדים" tight>
           {topQuotes.length ? (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
               {topQuotes.map((q) => <QuoteTile key={q.symbol} q={q} showCurrency={isStock(q.symbol)} />)}
