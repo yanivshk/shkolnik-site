@@ -313,7 +313,7 @@ export function SurfBar({ initial }: { initial: Surf | null }) {
 
   return (
     <div className="relative mt-1" aria-busy={busy}>
-      <div className="flex flex-col items-start gap-1">
+      <div className="flex flex-col items-start gap-[var(--hg,0.25rem)]">
         <div className="flex flex-wrap items-center gap-1.5 max-[399px]:gap-1">
           <a href="/sea" aria-label={`גלישה ב${s.spot}: גלים ${h.wave.toFixed(1)} מטר, מחזור ${Math.round(h.period)} שניות — תחזית מלאה`} className={CHIP}>
             <I d={WAVE_ICON} className="h-4 w-4 text-royal" />
