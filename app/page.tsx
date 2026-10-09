@@ -1,8 +1,5 @@
 import { CONTACT_EMAIL, MARKETS_TOP_ORDER, OWNER_FULL_NAME, SITE_URL, STOCKS, WORLD_CLOCKS, quoteLink } from "@/lib/config";
-import { getAINews, getFx, getIsraelNews, getMarkets, getMoverReasons, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
-import { buildBrief } from "@/lib/brief";
-import { getLive } from "@/lib/live";
-import { BriefCard } from "@/components/brief";
+import { getAINews, getFx, getIsraelNews, getMarkets, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
 import { formatPct, hebrewDate } from "@/lib/format";
 import type { Quote } from "@/lib/types";
 import { AutoRefresh, BottomNav, Clock, WorldClocks } from "@/components/client";
@@ -74,11 +71,6 @@ export default async function Home() {
   const restQuotes = allQuotes.filter((q) => !MARKETS_TOP_ORDER.includes(q.symbol));
   const isStock = (s: string) => STOCKS.some((x) => x.symbol === s);
 
-  // "הבוקר שלך": תקציר לפי השעה, משחק חי, ו"למה זה זז?"
-  const watch = [...allQuotes, ...(tsla ? [tsla] : [])];
-  const [movers, live] = await Promise.all([getMoverReasons(watch), getLive(broadcasts.items)]);
-  const brief = await buildBrief({ weather, surf, broadcasts: broadcasts.items, quotes: watch, movers, liveIds: live.map((l) => l.id) });
-
   return (
     <>
       <BallsBackdrop />
@@ -138,8 +130,6 @@ export default async function Home() {
             )}
           </div>
         </section>
-
-        <BriefCard brief={brief} liveItems={broadcasts.items.filter((b) => b.date === today)} live={live} />
 
         {/* שווקים */}
         <Section id="markets" title="מניות ומדדים" tight titleSize={29}>
