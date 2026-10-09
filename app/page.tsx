@@ -1,5 +1,8 @@
-import { CONTACT_EMAIL, MARKETS_TOP_ORDER, OWNER_FULL_NAME, STOCKS, WORLD_CLOCKS, quoteLink } from "@/lib/config";
-import { getAINews, getFx, getIsraelNews, getMarkets, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
+import { CONTACT_EMAIL, MARKETS_TOP_ORDER, OWNER_FULL_NAME, SITE_URL, STOCKS, WORLD_CLOCKS, quoteLink } from "@/lib/config";
+import { getAINews, getFx, getIsraelNews, getMarkets, getMoverReasons, getSportsNews, getTeslaNews, getTeslaQuote } from "@/lib/data";
+import { buildBrief } from "@/lib/brief";
+import { getLive } from "@/lib/live";
+import { BriefCard } from "@/components/brief";
 import { formatPct, hebrewDate } from "@/lib/format";
 import type { Quote } from "@/lib/types";
 import { AutoRefresh, BottomNav, Clock, WorldClocks } from "@/components/client";
@@ -71,6 +74,11 @@ export default async function Home() {
   const restQuotes = allQuotes.filter((q) => !MARKETS_TOP_ORDER.includes(q.symbol));
   const isStock = (s: string) => STOCKS.some((x) => x.symbol === s);
 
+  // "הבוקר שלך": תקציר לפי השעה, משחק חי, ו"למה זה זז?"
+  const watch = [...allQuotes, ...(tsla ? [tsla] : [])];
+  const [movers, live] = await Promise.all([getMoverReasons(watch), getLive(broadcasts.items)]);
+  const brief = await buildBrief({ weather, surf, broadcasts: broadcasts.items, quotes: watch, movers, liveIds: live.map((l) => l.id) });
+
   return (
     <>
       <BallsBackdrop />
@@ -131,6 +139,8 @@ export default async function Home() {
           </div>
         </section>
 
+        <BriefCard brief={brief} liveItems={broadcasts.items.filter((b) => b.date === today)} live={live} />
+
         {/* שווקים */}
         <Section id="markets" title="מניות ומדדים" tight titleSize={29}>
           {topQuotes.length ? (
@@ -151,6 +161,11 @@ export default async function Home() {
         {/* ספורט */}
         <Section id="sports" eyebrow="Sports · רק מכבי" title="ספורט" action={<span className="flex items-center gap-2"><RealSoccerBall id="sp-s" className="h-7 w-7" /><MaccabiLogo className="h-8 w-8" /><RealBasketball id="sp-b" className="h-7 w-7" /></span>}>
           <BroadcastTable initial={broadcasts} today={today} />
+          {/* מנוי יומן: נרשמים פעם אחת, והמשחקים נכנסים ומתעדכנים ביומן לבד */}
+          <a href={`${SITE_URL.replace(/^https?:/, "webcal:")}/api/calendar`} className="glass press -mt-3 flex items-center justify-center gap-2 rounded-2xl px-3 py-3 text-[14px] font-semibold text-royal">
+            <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18M8 15l2.5 2.5L16 13" /></svg>
+            כל המשחקים ביומן שלי — מתעדכן אוטומטית
+          </a>
           <h3 className="mb-3 mt-7 text-[17px] font-semibold text-muted">כותרות</h3>
           <NewsList items={sportsNews} showSource={false} />
         </Section>
