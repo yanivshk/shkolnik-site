@@ -33,12 +33,23 @@ function Row({ b, i }: { b: Broadcast; i: number }) {
         <span className="block">{b.time}</span>
       </td>
       <td className="px-1 py-2.5 sm:px-1.5 max-[399px]:px-0.5">
-        <span className="sr-only">{b.sport === "soccer" ? "כדורגל" : "כדורסל"}</span>
-        {b.sport === "soccer" ? <RealSoccerBall id={`bc-s${i}`} className="h-6 w-6 max-[399px]:h-5 max-[399px]:w-5" /> : <RealBasketball id={`bc-b${i}`} className="h-6 w-6 max-[399px]:h-5 max-[399px]:w-5" />}
+        <span className="sr-only">{b.sport === "soccer" ? "כדורגל" : b.sport === "basketball" ? "כדורסל" : "ענף לא ידוע"}</span>
+        {b.sport === "soccer" ? (
+          <RealSoccerBall id={`bc-s${i}`} className="h-6 w-6 max-[399px]:h-5 max-[399px]:w-5" />
+        ) : b.sport === "basketball" ? (
+          <RealBasketball id={`bc-b${i}`} className="h-6 w-6 max-[399px]:h-5 max-[399px]:w-5" />
+        ) : (
+          // ענף לא ודאי — מסך טלוויזיה ניטרלי במקום ניחוש
+          <svg viewBox="0 0 24 24" className="h-6 w-6 text-muted max-[399px]:h-5 max-[399px]:w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="3" y="6" width="18" height="12" rx="2" /><path d="m9 3 3 3 3-3" /></svg>
+        )}
       </td>
       <td className="px-1 py-2.5 sm:px-1.5 max-[399px]:px-0.5">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={b.logo} alt={b.team} title={b.team} width={28} height={28} className="h-7 w-7 min-w-7 max-w-none object-contain max-[399px]:h-6 max-[399px]:w-6 max-[399px]:min-w-6" loading="lazy" />
+        {b.logo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={b.logo} alt={b.team} title={b.team} width={28} height={28} className="h-7 w-7 min-w-7 max-w-none object-contain max-[399px]:h-6 max-[399px]:w-6 max-[399px]:min-w-6" loading="lazy" />
+        ) : (
+          <span className="block h-7 w-7 max-[399px]:h-6 max-[399px]:w-6" aria-hidden />
+        )}
       </td>
       <td className="px-1 py-2.5 sm:px-1.5 max-[399px]:px-0.5">
         <span className="block text-[11px] text-muted">{b.team} נגד</span>

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "mock": "MOCK_DATA=1 next dev"
+    "mock": "MOCK_DATA=1 next dev",
+    "test": "node --test \"tests/*.test.mts\""
   },
   "dependencies": {
     "@fontsource-variable/heebo": "^5.3.0",
