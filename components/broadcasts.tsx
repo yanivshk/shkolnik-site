@@ -26,6 +26,21 @@ function icsHref(b: Broadcast) {
   return `/api/ics?${new URLSearchParams({ d: e.date, t: e.time, title: e.title, ch: e.where, lg: e.league, s: e.sport })}`;
 }
 
+/** קבוצה בטבלת ליגת האלופות: לוגו + שם. בלי לוגו מוכר — מגן ניטרלי */
+function TeamLine({ name, logo }: { name: string; logo?: string }) {
+  return (
+    <span className="flex items-center gap-1.5 py-0.5 font-bold">
+      {logo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={logo} alt="" width={22} height={22} className="h-[22px] w-[22px] min-w-[22px] max-w-none object-contain" loading="lazy" referrerPolicy="no-referrer" />
+      ) : (
+        <svg viewBox="0 0 24 24" className="h-[22px] w-[22px] min-w-[22px] text-muted/60" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6z" /></svg>
+      )}
+      <span>{name}</span>
+    </span>
+  );
+}
+
 /** ucl = טבלת ליגת האלופות: בלי עמודות לוגו ובית/חוץ; team = קבוצת הבית, opponent = קבוצת החוץ */
 function Row({ b, i, ucl = false }: { b: Broadcast; i: number; ucl?: boolean }) {
   const { day, date } = shortDate(b.date);
@@ -63,10 +78,18 @@ function Row({ b, i, ucl = false }: { b: Broadcast; i: number; ucl?: boolean }) 
           <span className="block h-7 w-7 max-[399px]:h-6 max-[399px]:w-6" aria-hidden />
         )}
       </td>}
-      <td className="px-1 py-2.5 sm:px-1.5 max-[399px]:px-0.5">
-        <span className="block text-[11px] text-muted">{b.team} נגד</span>
-        <span className="font-bold">{b.opponent}</span>
-      </td>
+      {ucl ? (
+        // ליגת האלופות: שתי הקבוצות, כל אחת עם הלוגו שלה (בית למעלה, חוץ למטה)
+        <td className="px-1 py-2.5 sm:px-1.5 max-[399px]:px-0.5">
+          <TeamLine name={b.team} logo={b.logo} />
+          <TeamLine name={b.opponent} logo={b.opponentLogo} />
+        </td>
+      ) : (
+        <td className="px-1 py-2.5 sm:px-1.5 max-[399px]:px-0.5">
+          <span className="block text-[11px] text-muted">{b.team} נגד</span>
+          <span className="font-bold">{b.opponent}</span>
+        </td>
+      )}
       {!ucl && <td className="px-1 py-2.5 sm:px-1.5 max-[399px]:px-0.5">
         <span className={`whitespace-nowrap rounded-full px-2 py-0.5 max-[399px]:px-1.5 max-[359px]:px-1 text-[11px] font-bold ${b.home ? "bg-gold/60 text-navy" : "bg-navy/[0.07] text-muted"}`}>{b.home ? "בית" : "חוץ"}</span>
       </td>}

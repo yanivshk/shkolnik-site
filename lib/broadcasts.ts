@@ -2,6 +2,7 @@
 
 import { TZ } from "./config";
 import { classifySport, isExcluded, resolveSport, type Sport, type SportEvidence } from "./sport-classify";
+import { uclLogo } from "./ucl-teams";
 
 export type { Sport };
 
@@ -12,6 +13,7 @@ export type Broadcast = {
   sport: Sport | null; // null = לא ניתן לקבוע בוודאות — מוצג בלי אייקון ענף, לא בניחוש
   team: string; // הקבוצה שלנו
   logo?: string; // לוגו הקבוצה שלנו בענף הזה (רק כשהענף ידוע)
+  opponentLogo?: string; // בטבלת ליגת האלופות: לוגו קבוצת החוץ
   home: boolean; // משחק בית
   opponent: string;
   league: string;
@@ -234,8 +236,10 @@ function toChampions(raws: Raw[]): Broadcast[] {
     time: cs.map((c) => c.r.time).sort()[0],
     sport: "soccer" as const,
     team: cs[0].home, // בטבלת ליגת האלופות: team = קבוצת הבית, opponent = קבוצת החוץ
+    logo: uclLogo(cs[0].home),
     home: false,
     opponent: cs[0].away,
+    opponentLogo: uclLogo(cs[0].away),
     league: cs.find((c) => c.round)?.round ?? "",
     channels: [...new Set(cs.map((c) => c.r.channel))],
   }));
@@ -248,7 +252,7 @@ export async function getChampions(from: string, days = BROADCAST_DAYS): Promise
 
 function mockChampions(from: string): Broadcast[] {
   const row = (d: number, time: string, home: string, away: string, channels: string[]): Broadcast =>
-    ({ id: `ucl-${d}-${home}`, date: addDays(from, d), time, sport: "soccer", team: home, home: false, opponent: away, league: "מחזור 3", channels });
+    ({ id: `ucl-${d}-${home}`, date: addDays(from, d), time, sport: "soccer", team: home, logo: uclLogo(home), home: false, opponent: away, opponentLogo: uclLogo(away), league: "מחזור 3", channels });
   return [
     row(0, "19:45", "סבאח", "בורוסיה דורטמונד", ["ספורט 5 Live"]),
     row(0, "22:00", "פ.ס.ז'", "ברצלונה", ["ערוץ הספורט"]),
