@@ -197,13 +197,68 @@ async function sport1(date: string, channels: Record<string, string>): Promise<R
 
 /* ---------------- ציבורי ---------------- */
 
-export async function getBroadcasts(from: string, days = BROADCAST_DAYS): Promise<BroadcastDay> {
-  if (process.env.MOCK_DATA === "1") return { from, days, items: mockBroadcasts(from) };
+/** כל השורות משני המקורות לטווח התאריכים (הבקשות נשמרות בקאש, כך ששתי הטבלאות לא מכפילות קריאות) */
+async function fetchRaws(from: string, days: number): Promise<Raw[]> {
   const dates = Array.from({ length: days }, (_, i) => addDays(from, i));
   const s1Channels = await sport1Channels();
-  const raws = (await Promise.all(dates.flatMap((d) => [sport5(d), sport1(d, s1Channels)]))).flat();
-  const items = toBroadcasts(raws).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
-  return { from, days, items };
+  return (await Promise.all(dates.flatMap((d) => [sport5(d), sport1(d, s1Channels)]))).flat();
+}
+
+const byTime = (a: Broadcast, b: Broadcast) => (a.date + a.time).localeCompare(b.date + b.time);
+
+export async function getBroadcasts(from: string, days = BROADCAST_DAYS): Promise<BroadcastDay> {
+  if (process.env.MOCK_DATA === "1") return { from, days, items: mockBroadcasts(from) };
+  return { from, days, items: toBroadcasts(await fetchRaws(from, days)).sort(byTime) };
+}
+
+/* ---------------- ליגת האלופות בכדורגל ---------------- */
+
+/** הליגה בדיוק "ליגת האלופות" (עם/בלי עונה) — בלי "בכדורסל", "בכדוריד", אולפנים ותקצירים */
+const UCL_LEAGUE = /^ליגת האלופות(\s+\d{4}\/\d{2,4})?$/;
+
+/** כל משחקי ליגת האלופות בכדורגל שמשודרים בערוצי הספורט, מאוחדים ממספר ערוצים */
+function toChampions(raws: Raw[]): Broadcast[] {
+  const groups = new Map<string, { r: Raw; home: string; away: string; round: string }[]>();
+  for (const r of raws) {
+    if (!UCL_LEAGUE.test(r.league) || isExcluded(r.league, r.title)) continue;
+    if (classifySport(r.league, r.title)?.sport === "basketball") continue;
+    const [match, ...rest] = r.title.split(",");
+    const sides = match.replace(/\s*\([^)]*\)\s*$/, "").split(" - ").map((x) => x.trim());
+    if (sides.length !== 2 || !sides[0] || !sides[1]) continue; // "ערוץ הקיבוץ" וכד' — לא משחק
+    const key = `${r.date}|${norm(sides[0])}|${norm(sides[1])}`;
+    groups.set(key, [...(groups.get(key) ?? []), { r, home: sides[0], away: sides[1], round: rest.join(",").trim() }]);
+  }
+  return [...groups].map(([key, cs]) => ({
+    id: `ucl|${key}`,
+    date: cs[0].r.date,
+    time: cs.map((c) => c.r.time).sort()[0],
+    sport: "soccer" as const,
+    team: cs[0].home, // בטבלת ליגת האלופות: team = קבוצת הבית, opponent = קבוצת החוץ
+    home: false,
+    opponent: cs[0].away,
+    league: cs.find((c) => c.round)?.round ?? "",
+    channels: [...new Set(cs.map((c) => c.r.channel))],
+  }));
+}
+
+export async function getChampions(from: string, days = BROADCAST_DAYS): Promise<BroadcastDay> {
+  if (process.env.MOCK_DATA === "1") return { from, days, items: mockChampions(from) };
+  return { from, days, items: toChampions(await fetchRaws(from, days)).sort(byTime) };
+}
+
+function mockChampions(from: string): Broadcast[] {
+  const row = (d: number, time: string, home: string, away: string, channels: string[]): Broadcast =>
+    ({ id: `ucl-${d}-${home}`, date: addDays(from, d), time, sport: "soccer", team: home, home: false, opponent: away, league: "מחזור 3", channels });
+  return [
+    row(0, "19:45", "סבאח", "בורוסיה דורטמונד", ["ספורט 5 Live"]),
+    row(0, "22:00", "פ.ס.ז'", "ברצלונה", ["ערוץ הספורט"]),
+    row(0, "22:00", "ליברפול", "ויאריאל", ["ספורט 5+"]),
+    row(0, "22:00", "מנצ'סטר סיטי", "א.א.ק אתונה", ["ספורט 5 Stars"]),
+    row(1, "19:45", "קומו", "מנצ'סטר יונייטד", ["ספורט 5+"]),
+    row(1, "22:00", "ריאל מדריד", "לייפציג", ["ערוץ הספורט"]),
+    row(1, "22:00", "באיירן מינכן", "ארסנל", ["ספורט 5+"]),
+    row(1, "22:00", "אינטר", "שחטאר דונייצק", ["ספורט 5 Stars"]),
+  ];
 }
 
 function mockLiveTime() {

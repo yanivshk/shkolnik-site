@@ -26,7 +26,8 @@ function icsHref(b: Broadcast) {
   return `/api/ics?${new URLSearchParams({ d: e.date, t: e.time, title: e.title, ch: e.where, lg: e.league, s: e.sport })}`;
 }
 
-function Row({ b, i }: { b: Broadcast; i: number }) {
+/** ucl = טבלת ליגת האלופות: בלי עמודות לוגו ובית/חוץ; team = קבוצת הבית, opponent = קבוצת החוץ */
+function Row({ b, i, ucl = false }: { b: Broadcast; i: number; ucl?: boolean }) {
   const { day, date } = shortDate(b.date);
   return (
     <tr className="border-t border-line/70 align-middle">
@@ -54,21 +55,21 @@ function Row({ b, i }: { b: Broadcast; i: number }) {
           <svg viewBox="0 0 24 24" className="h-6 w-6 text-muted max-[399px]:h-5 max-[399px]:w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="3" y="6" width="18" height="12" rx="2" /><path d="m9 3 3 3 3-3" /></svg>
         )}
       </td>
-      <td className="px-1 py-2.5 sm:px-1.5 max-[399px]:px-0.5">
+      {!ucl && <td className="px-1 py-2.5 sm:px-1.5 max-[399px]:px-0.5">
         {b.logo ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={b.logo} alt={b.team} title={b.team} width={28} height={28} className="h-7 w-7 min-w-7 max-w-none object-contain max-[399px]:h-6 max-[399px]:w-6 max-[399px]:min-w-6" loading="lazy" />
         ) : (
           <span className="block h-7 w-7 max-[399px]:h-6 max-[399px]:w-6" aria-hidden />
         )}
-      </td>
+      </td>}
       <td className="px-1 py-2.5 sm:px-1.5 max-[399px]:px-0.5">
         <span className="block text-[11px] text-muted">{b.team} נגד</span>
         <span className="font-bold">{b.opponent}</span>
       </td>
-      <td className="px-1 py-2.5 sm:px-1.5 max-[399px]:px-0.5">
+      {!ucl && <td className="px-1 py-2.5 sm:px-1.5 max-[399px]:px-0.5">
         <span className={`whitespace-nowrap rounded-full px-2 py-0.5 max-[399px]:px-1.5 max-[359px]:px-1 text-[11px] font-bold ${b.home ? "bg-gold/60 text-navy" : "bg-navy/[0.07] text-muted"}`}>{b.home ? "בית" : "חוץ"}</span>
-      </td>
+      </td>}
       <td className="py-2.5 pe-3 ps-1 sm:pe-1.5 sm:ps-1.5 max-[399px]:pe-2 max-[359px]:pe-1">
         <span className="flex flex-wrap gap-1">
           {b.channels.map((c) => (
@@ -83,7 +84,8 @@ function Row({ b, i }: { b: Broadcast; i: number }) {
   );
 }
 
-export function BroadcastTable({ initial, today }: { initial: BroadcastDay | null; today: string }) {
+export function BroadcastTable({ initial, today, kind = "ours" }: { initial: BroadcastDay | null; today: string; kind?: "ours" | "ucl" }) {
+  const ucl = kind === "ucl";
   const [from, setFrom] = useState(initial?.from ?? today);
   const [data, setData] = useState<BroadcastDay | null>(initial);
   const [busy, setBusy] = useState(false);
@@ -103,7 +105,7 @@ export function BroadcastTable({ initial, today }: { initial: BroadcastDay | nul
     setBusy(true);
     setFailed(false);
     try {
-      const r = await fetch(`/api/broadcasts?from=${date}`);
+      const r = await fetch(`/api/broadcasts?from=${date}${ucl ? "&kind=ucl" : ""}`);
       if (id !== req.current) return;
       if (r.ok) setData(await r.json());
       else setFailed(true);
@@ -118,10 +120,10 @@ export function BroadcastTable({ initial, today }: { initial: BroadcastDay | nul
   const to = addDays(from, (data?.days ?? 7) - 1);
 
   return (
-    <div className="glass mb-6 overflow-hidden rounded-[var(--radius-card)]">
+    <div className={`glass overflow-hidden rounded-[var(--radius-card)] ${ucl ? "" : "mb-6"}`}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/70 px-3 py-3">
         <div>
-          <h3 className="text-[19.5px] font-extrabold">שידורי ספורט</h3>
+          <h3 className="text-[19.5px] font-extrabold">{ucl ? "ליגת האלופות" : "שידורי ספורט"}</h3>
           <p className="text-[11px] text-muted">
             <span dir="ltr" className="tabular">{shortDate(from).date}</span>–<span dir="ltr" className="tabular">{shortDate(to).date}</span> · ערוץ הספורט וספורט 1
           </p>
@@ -150,20 +152,20 @@ export function BroadcastTable({ initial, today }: { initial: BroadcastDay | nul
                 <th scope="col" className="py-2 pe-1 ps-2 text-start font-semibold sm:pe-2 sm:ps-3 max-[399px]:ps-1.5 max-[359px]:ps-1">תאריך</th>
                 <th scope="col" className="px-1.5 py-2 text-start font-semibold max-[399px]:px-0.5">שעה</th>
                 <th scope="col" className="px-1.5 py-2 text-start font-semibold max-[399px]:px-0.5"><span className="sr-only">ענף</span></th>
-                <th scope="col" className="px-1 py-2 text-start font-semibold sm:px-1.5 max-[399px]:px-0.5"><span className="sr-only">קבוצה</span></th>
-                <th scope="col" className="px-1 py-2 text-start font-semibold sm:px-1.5 max-[399px]:px-0.5">יריבה</th>
-                <th scope="col" className="px-1 py-2 text-start font-semibold sm:px-1.5 max-[399px]:px-0.5">בית/חוץ</th>
-                <th scope="col" className="py-2 pe-3 ps-1.5 text-start font-semibold sm:pe-1.5 max-[399px]:pe-2 max-[359px]:pe-1">ערוץ<span className="sm:hidden"> · ליגה</span></th>
-                <th scope="col" className="hidden py-2 pe-3 ps-1.5 text-start font-semibold sm:table-cell">ליגה</th>
+                {!ucl && <th scope="col" className="px-1 py-2 text-start font-semibold sm:px-1.5 max-[399px]:px-0.5"><span className="sr-only">קבוצה</span></th>}
+                <th scope="col" className="px-1 py-2 text-start font-semibold sm:px-1.5 max-[399px]:px-0.5">{ucl ? "משחק" : "יריבה"}</th>
+                {!ucl && <th scope="col" className="px-1 py-2 text-start font-semibold sm:px-1.5 max-[399px]:px-0.5">בית/חוץ</th>}
+                <th scope="col" className="py-2 pe-3 ps-1.5 text-start font-semibold sm:pe-1.5 max-[399px]:pe-2 max-[359px]:pe-1">ערוץ<span className="sm:hidden"> · {ucl ? "שלב" : "ליגה"}</span></th>
+                <th scope="col" className="hidden py-2 pe-3 ps-1.5 text-start font-semibold sm:table-cell">{ucl ? "שלב" : "ליגה"}</th>
               </tr>
             </thead>
             <tbody>
-              {items.map((b, i) => <Row key={b.id} b={b} i={i} />)}
+              {items.map((b, i) => <Row key={b.id} b={b} i={ucl ? i + 100 : i} ucl={ucl} />)}
             </tbody>
           </table>
         ) : (
           <p className="px-4 py-6 text-center text-[13px] text-muted">
-            {busy ? "טוען…" : failed ? "לוח השידורים לא זמין כרגע" : "אין שידורים של הקבוצות שלנו בתאריכים האלה. הערוצים מפרסמים לוח כשבוע מראש."}
+            {busy ? "טוען…" : failed ? "לוח השידורים לא זמין כרגע" : ucl ? "אין משחקי ליגת האלופות בשידור בתאריכים האלה." : "אין שידורים של הקבוצות שלנו בתאריכים האלה. הערוצים מפרסמים לוח כשבוע מראש."}
           </p>
         )}
       </div>
