@@ -6,7 +6,7 @@ import { AutoRefresh, BottomNav, Clock, WorldClocks } from "@/components/client"
 import { SiteMenu } from "@/components/site-menu";
 import { WeatherBar } from "@/components/weather";
 import { DEFAULT_PLACE, getWeather } from "@/lib/weather";
-import { getBroadcasts, israelToday } from "@/lib/broadcasts";
+import { getBroadcasts, getChampions, israelToday } from "@/lib/broadcasts";
 import { getSurf } from "@/lib/surf";
 import { SurfBar } from "@/components/surf";
 import { IsraelFlag, MaccabiFlag } from "@/components/flag";
@@ -57,9 +57,9 @@ function PhotoLink({ href, label }: { href: string; label: string }) {
 
 export default async function Home() {
   const today = israelToday();
-  const [markets, tsla, teslaNews, sportsNews, aiNews, news, weather, broadcasts, fx, surf] = await Promise.all([
+  const [markets, tsla, teslaNews, sportsNews, aiNews, news, weather, broadcasts, fx, surf, champions] = await Promise.all([
     getMarkets(), getTeslaQuote(), getTeslaNews(), getSportsNews(), getAINews(), getIsraelNews(), getWeather(DEFAULT_PLACE.lat, DEFAULT_PLACE.lon, DEFAULT_PLACE.name),
-    getBroadcasts(today), getFx(), getSurf(),
+    getBroadcasts(today), getFx(), getSurf(), getChampions(today),
   ]);
 
   const idx = (s: string) => markets.indices.find((q) => q.symbol === s);
@@ -156,6 +156,10 @@ export default async function Home() {
             <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18M8 15l2.5 2.5L16 13" /></svg>
             כל המשחקים ביומן שלי — מתעדכן אוטומטית
           </a>
+          {/* ליגת האלופות בכדורגל — כל המשחקים המשודרים, באותו עיצוב של לוח השידורים */}
+          <div className="mt-4">
+            <BroadcastTable kind="ucl" initial={champions} today={today} />
+          </div>
           <h3 className="mb-3 mt-7 text-[17px] font-semibold text-muted">כותרות</h3>
           <NewsList items={sportsNews} showSource={false} />
         </Section>
