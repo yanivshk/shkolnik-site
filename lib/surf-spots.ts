@@ -37,6 +37,9 @@ export type SurfHour = {
   gust?: number;         // משבים, קשר
   water?: number;        // טמפרטורת מים, °C
   tide?: number;         // גובה פני הים (גאות ושפל), מ׳
+  temp?: number;         // טמפרטורת אוויר, °C
+  humidity?: number;     // לחות יחסית, %
+  rain?: number;         // סיכוי לגשם, %
 };
 
 /** תחזית ים ל-24 שעות (מ-2 שעות לפני עכשיו), לחוף שנבחר */

@@ -90,20 +90,14 @@ export function dayLabel(t: string, today: string) {
   return d === tm.toISOString().slice(0, 10) ? "מחר" : dayName(t);
 }
 
-function SeaChart({ hours, now, sel, onSel }: { hours: SurfHour[]; now: number; sel: number; onSel: (i: number) => void }) {
+/** ציר הזמן המשותף לגרפים בדף הים: כיוון (מימין לשמאל בגרף השבועי), קפיצה לשעות הייחוס, גרירה ומקלדת */
+function useTimeAxis(hours: SurfHour[], now: number, sel: number, onSel: (i: number) => void) {
   const n = hours.length;
   const multiDay = n > 36;
   // בגרף השבועי הזמן רץ מימין לשמאל (כמו קריאה בעברית): "היום" בצד ימין
   const rtl = multiDay;
   const fr = (i: number) => (rtl ? 1 - i / (n - 1) : i / (n - 1));
-  const top = Math.max(1, ...hours.map((h) => Math.max(h.wave, h.swell ?? 0))) * 1.15;
   const x = (i: number) => fr(i) * VW;
-  const y = (v: number) => VH - (v / top) * (VH - 4);
-  const wavePts = hours.map((h, i) => [x(i), y(h.wave)] as [number, number]);
-  const swellPts = hours.filter((h) => h.swell != null).length === n ? hours.map((h, i) => [x(i), y(h.swell!)] as [number, number]) : null;
-  const waveLine = smooth(wavePts);
-  const grid = [0.5, 1, 1.5, 2, 2.5, 3].filter((g) => g < top);
-  const windMax = Math.max(20, ...hours.map((h) => h.gust ?? h.wind));
   const pct = (i: number) => `${fr(i) * 100}%`;
   const midnights = hours.map((hr, i) => (i > 0 && hh(hr.time) === "00" ? i : -1)).filter((i) => i > 0);
   const snaps = useMemo(() => (multiDay ? snapPoints(hours, now) : null), [hours, now, multiDay]);
@@ -139,29 +133,98 @@ function SeaChart({ hours, now, sel, onSel }: { hours: SurfHour[]; now: number; 
   const cursor = sel === now ? C_NOW : multiDay && slot ? slot.color : "#ffffff";
   const edge = (i: number) => (fr(i) < 0.06 ? "" : fr(i) > 0.94 ? "-translate-x-full" : "-translate-x-1/2");
 
+  /** מאפייני אזור הגרירה (role=slider) */
+  const sliderProps = (label: string, valueText: string) => ({
+    ref,
+    role: "slider" as const,
+    tabIndex: 0,
+    "aria-label": label,
+    "aria-valuemin": 0,
+    "aria-valuemax": n - 1,
+    "aria-valuenow": sel,
+    "aria-valuetext": `${multiDay ? `${dayLabel(h.time, today)} ` : ""}${hh(h.time)}:00 — ${valueText}`,
+    className: "relative cursor-ew-resize touch-pan-y outline-none",
+    onPointerDown: (e: React.PointerEvent) => { (e.target as Element).setPointerCapture?.(e.pointerId); pick(e.clientX); },
+    onPointerMove: (e: React.PointerEvent) => { if (e.buttons || e.pointerType === "mouse") pick(e.clientX); },
+    onKeyDown: (e: React.KeyboardEvent) => {
+      // החץ מזיז את הסמן לכיוון שהוא מצביע עליו על המסך
+      if (e.key === "ArrowLeft") step(rtl ? 1 : -1);
+      else if (e.key === "ArrowRight") step(rtl ? -1 : 1);
+      else return;
+      e.preventDefault();
+    },
+  });
+
+  return { n, multiDay, rtl, fr, x, pct, midnights, today, segments, h, cursor, edge, sliderProps };
+}
+
+/** נקודות שעות הייחוס (07 / 12 / 17) מתחת לגרף */
+function SlotDots({ hours, now, sel, pct }: { hours: SurfHour[]; now: number; sel: number; pct: (i: number) => string }) {
+  return (
+    <div className="relative mt-1 h-2" aria-hidden>
+      {hours.map((hr, i) => {
+        const sl = slotOf(hr.time);
+        return sl ? (
+          <span key={i} className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full ${i === sel ? "h-2 w-2 ring-2 ring-white/40" : "h-1.5 w-1.5"} ${i < now ? "opacity-30" : ""}`} style={{ left: pct(i), background: sl.color }} />
+        ) : null;
+      })}
+    </div>
+  );
+}
+
+/** ציר הימים: "היום" / "מחר" / שם היום באמצע כל יום */
+function DayAxis({ ax, hours }: { ax: ReturnType<typeof useTimeAxis>; hours: SurfHour[] }) {
+  return (
+    <div className="relative mt-1 h-3.5 text-[9.5px] text-white/55" aria-hidden>
+      {ax.segments.map((sg) => (
+        <span key={sg.day} className={`absolute whitespace-nowrap ${ax.edge(sg.mid)} ${sg.day === ax.h.time.slice(0, 10) ? "font-bold text-white" : ""}`} style={{ left: ax.pct(sg.mid) }}>{dayLabel(hours[sg.mid].time, ax.today)}</span>
+      ))}
+    </div>
+  );
+}
+
+/** קו "עכשיו" + קו הבחירה בצבע השעה */
+function Cursor({ ax, now, sel }: { ax: ReturnType<typeof useTimeAxis>; now: number; sel: number }) {
+  return (
+    <>
+      <span className="pointer-events-none absolute inset-y-0 w-px" style={{ left: ax.pct(now), background: C_NOW, opacity: 0.55 }} />
+      <span className="pointer-events-none absolute inset-y-0 w-0.5 -translate-x-1/2 rounded-full transition-[left] duration-75" style={{ left: ax.pct(sel), background: ax.cursor, boxShadow: `0 0 10px ${ax.cursor}` }} />
+    </>
+  );
+}
+
+/** מקרא שעות הייחוס ועכשיו */
+function SlotLegend() {
+  return (
+    <>
+      <span className="flex items-center gap-1"><span className="h-2.5 w-0.5 rounded-full" style={{ background: C_NOW }} />עכשיו</span>
+      {SLOTS.map((sl) => (
+        <span key={sl.hh} className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full" style={{ background: sl.color }} />
+          <span>{sl.label} <span dir="ltr" className="tabular">{sl.hh}:00</span></span>
+        </span>
+      ))}
+    </>
+  );
+}
+
+function SeaChart({ hours, now, sel, onSel }: { hours: SurfHour[]; now: number; sel: number; onSel: (i: number) => void }) {
+  const ax = useTimeAxis(hours, now, sel, onSel);
+  const { n, multiDay, rtl, x, pct, midnights, h, edge } = ax;
+  const top = Math.max(1, ...hours.map((hr) => Math.max(hr.wave, hr.swell ?? 0))) * 1.15;
+  const y = (v: number) => VH - (v / top) * (VH - 4);
+  const wavePts = hours.map((hr, i) => [x(i), y(hr.wave)] as [number, number]);
+  const swellPts = hours.filter((hr) => hr.swell != null).length === n ? hours.map((hr, i) => [x(i), y(hr.swell!)] as [number, number]) : null;
+  const waveLine = smooth(wavePts);
+  const grid = [0.5, 1, 1.5, 2, 2.5, 3].filter((g) => g < top);
+  const windMax = Math.max(20, ...hours.map((hr) => hr.gust ?? hr.wind));
+
   return (
     <div dir="ltr" className="select-none">
       {/* אזור הגרף — גרירה לרוחב בוחרת שעה */}
-      <div
-        ref={ref}
-        role="slider"
-        tabIndex={0}
-        aria-label="שעה בתחזית"
-        aria-valuemin={0}
-        aria-valuemax={n - 1}
-        aria-valuenow={sel}
-        aria-valuetext={`${multiDay ? `${dayLabel(h.time, today)} ` : ""}${hh(h.time)}:00 — גל ${h.wave.toFixed(1)} מטר`}
-        className="relative cursor-ew-resize touch-pan-y outline-none"
-        onPointerDown={(e) => { (e.target as Element).setPointerCapture?.(e.pointerId); pick(e.clientX); }}
-        onPointerMove={(e) => { if (e.buttons || e.pointerType === "mouse") pick(e.clientX); }}
-        onKeyDown={(e) => {
-          // החץ מזיז את הסמן לכיוון שהוא מצביע עליו על המסך
-          if (e.key === "ArrowLeft") step(rtl ? 1 : -1);
-          else if (e.key === "ArrowRight") step(rtl ? -1 : 1);
-          else return;
-          e.preventDefault();
-        }}
-      >
+      <div {...ax.sliderProps("שעה בתחזית", `גל ${h.wave.toFixed(1)} מטר`)}>
+        {/* שכבת הגרף בגובה ה-SVG — המיקומים באחוזים מתייחסים אליה */}
+        <div className="relative">
         <svg viewBox={`0 0 ${VW} ${VH}`} preserveAspectRatio="none" className="block h-[70px] w-full overflow-visible" aria-hidden>
           <defs>
             <linearGradient id="sea-fill" x1="0" x2="0" y1="0" y2="1">
@@ -189,26 +252,18 @@ function SeaChart({ hours, now, sel, onSel }: { hours: SurfHour[]; now: number; 
           <span key={g} className="pointer-events-none absolute left-0.5 -translate-y-full text-[9px] leading-none text-white/45" style={{ top: `${(y(g) / VH) * 100}%` }}>{g}m</span>
         ))}
 
-        {/* קו "עכשיו" */}
-        <span className="pointer-events-none absolute inset-y-0 w-px" style={{ left: pct(now), background: C_NOW, opacity: 0.55 }} />
-        {/* קו הבחירה (בצבע השעה) + נקודות על הסדרות */}
-        <span className="pointer-events-none absolute inset-y-0 w-0.5 -translate-x-1/2 rounded-full transition-[left] duration-75" style={{ left: pct(sel), background: cursor, boxShadow: `0 0 10px ${cursor}` }} />
-        <span className="pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#0d2152] transition-[left,top] duration-75" style={{ left: pct(sel), top: `${(y(h.wave) / VH) * 100}%`, background: C_WAVE }} />
+        {/* נקודות על הסדרות בשעה הנבחרת */}
+        <span className="pointer-events-none absolute z-10 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#0d2152] transition-[left,top] duration-75" style={{ left: pct(sel), top: `${(y(h.wave) / VH) * 100}%`, background: C_WAVE }} />
         {h.swell != null && (
-          <span className="pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#0d2152] transition-[left,top] duration-75" style={{ left: pct(sel), top: `${(y(h.swell) / VH) * 100}%`, background: C_SWELL }} />
+          <span className="pointer-events-none absolute z-10 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#0d2152] transition-[left,top] duration-75" style={{ left: pct(sel), top: `${(y(h.swell) / VH) * 100}%`, background: C_SWELL }} />
         )}
+        </div>
+
+        {/* קו "עכשיו" + קו הבחירה (בצבע השעה) — לכל גובה הגרף */}
+        <Cursor ax={ax} now={now} sel={sel} />
 
         {/* סימוני שעות הייחוס (07 / 12 / 17) — נקודות צבעוניות מתחת לגרף */}
-        {multiDay && (
-          <div className="relative mt-1 h-2" aria-hidden>
-            {hours.map((hr, i) => {
-              const sl = slotOf(hr.time);
-              return sl ? (
-                <span key={i} className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full ${i === sel ? "h-2 w-2 ring-2 ring-white/40" : "h-1.5 w-1.5"} ${i < now ? "opacity-30" : ""}`} style={{ left: pct(i), background: sl.color }} />
-              ) : null;
-            })}
-          </div>
-        )}
+        {multiDay && <SlotDots hours={hours} now={now} sel={sel} pct={pct} />}
 
         {/* רצועת רוח — עמודות לפי עוצמה, סימון משבים */}
         <div className="relative mt-1 h-4" aria-hidden>
@@ -224,8 +279,8 @@ function SeaChart({ hours, now, sel, onSel }: { hours: SurfHour[]; now: number; 
       {/* ציר הזמן: ביום אחד — שעות; בכמה ימים — "היום" / "מחר" / שם היום באמצע כל יום */}
       <div className="relative mt-1 h-3.5 text-[9.5px] text-white/55" aria-hidden>
         {multiDay
-          ? segments.map((sg) => (
-              <span key={sg.day} className={`absolute whitespace-nowrap ${edge(sg.mid)} ${sg.day === h.time.slice(0, 10) ? "font-bold text-white" : ""}`} style={{ left: pct(sg.mid) }}>{dayLabel(hours[sg.mid].time, today)}</span>
+          ? ax.segments.map((sg) => (
+              <span key={sg.day} className={`absolute whitespace-nowrap ${edge(sg.mid)} ${sg.day === h.time.slice(0, 10) ? "font-bold text-white" : ""}`} style={{ left: pct(sg.mid) }}>{dayLabel(hours[sg.mid].time, ax.today)}</span>
             ))
           : hours.map((hr, i) =>
               i % 3 === 0 ? (
@@ -240,16 +295,130 @@ function SeaChart({ hours, now, sel, onSel }: { hours: SurfHour[]; now: number; 
           <span className="flex items-center gap-1"><span className="h-0.5 w-3 rounded-full" style={{ background: C_WAVE }} />גובה גל</span>
           <span className="flex items-center gap-1"><span className="h-0 w-3 border-t-2 border-dashed" style={{ borderColor: C_SWELL }} />סוול</span>
           <span className="flex items-center gap-1"><span className="h-2 w-1 rounded-t-[1px] bg-white/45" />רוח</span>
-          <span className="flex items-center gap-1"><span className="h-2.5 w-0.5 rounded-full" style={{ background: C_NOW }} />עכשיו</span>
-          {SLOTS.map((sl) => (
-            <span key={sl.hh} className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full" style={{ background: sl.color }} />
-              <span>{sl.label} <span dir="ltr" className="tabular">{sl.hh}:00</span></span>
-            </span>
-          ))}
+          <SlotLegend />
         </div>
       )}
     </div>
+  );
+}
+
+/* ---------------- גרף מזג אוויר (באותה שפה של גרף הים) ---------------- */
+
+const C_TEMP = C_SWELL; // טמפרטורה — הגוון החם של הפלטה
+const C_HUM = C_WAVE;   // לחות — הגוון הכחול, בקו מקווקו
+
+/** טמפרטורה, לחות וסיכוי לגשם לאורך השבוע — אותו סמן ואותן שעות ייחוס כמו בגרף הים (הסמנים מסונכרנים) */
+function WeatherChart({ hours, now, sel, onSel }: { hours: SurfHour[]; now: number; sel: number; onSel: (i: number) => void }) {
+  const ax = useTimeAxis(hours, now, sel, onSel);
+  const { multiDay, x, pct, midnights, h } = ax;
+  const temps = hours.map((hr) => hr.temp ?? NaN).filter((v) => !Number.isNaN(v));
+  if (!temps.length) return null;
+  const lo = Math.floor(Math.min(...temps) - 1);
+  const hi = Math.ceil(Math.max(...temps) + 1);
+  const yT = (v: number) => VH - ((v - lo) / (hi - lo)) * (VH - 6) - 2;
+  const yH = (v: number) => VH - (v / 100) * (VH - 6) - 2;
+  const tempLine = smooth(hours.map((hr, i) => [x(i), yT(hr.temp ?? lo)] as [number, number]));
+  const humLine = hours.every((hr) => hr.humidity != null) ? smooth(hours.map((hr, i) => [x(i), yH(hr.humidity!)] as [number, number])) : null;
+  const step = hi - lo > 12 ? 5 : hi - lo > 6 ? 3 : 2;
+  const grid = Array.from({ length: 10 }, (_, k) => Math.ceil(lo / step) * step + k * step).filter((g) => g > lo && g < hi);
+
+  return (
+    <div dir="ltr" className="select-none">
+      <div {...ax.sliderProps("שעה בתחזית מזג האוויר", `${h.temp != null ? `${Math.round(h.temp)} מעלות` : ""}${h.rain != null ? `, ${h.rain}% גשם` : ""}`)}>
+        {/* שכבת הגרף בגובה ה-SVG — המיקומים באחוזים מתייחסים אליה */}
+        <div className="relative">
+        <svg viewBox={`0 0 ${VW} ${VH}`} preserveAspectRatio="none" className="block h-[70px] w-full overflow-visible" aria-hidden>
+          <defs>
+            <linearGradient id="temp-fill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stopColor={C_TEMP} stopOpacity="0.45" />
+              <stop offset="1" stopColor={C_TEMP} stopOpacity="0.03" />
+            </linearGradient>
+          </defs>
+          {grid.map((g) => (
+            <line key={g} x1="0" x2={VW} y1={yT(g)} y2={yT(g)} stroke="white" strokeOpacity="0.09" vectorEffect="non-scaling-stroke" />
+          ))}
+          {midnights.map((i) => (
+            <line key={`d${i}`} x1={x(i)} x2={x(i)} y1="0" y2={VH} stroke="white" strokeOpacity="0.18" strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />
+          ))}
+          <rect x={Math.min(x(0), x(now))} y="0" width={Math.abs(x(now) - x(0))} height={VH} fill="#000" fillOpacity="0.14" />
+          <path d={`${tempLine} L${x(hours.length - 1)},${VH} L${x(0)},${VH}Z`} fill="url(#temp-fill)" />
+          {humLine && <path d={humLine} fill="none" stroke={C_HUM} strokeWidth="1.75" strokeDasharray="5 3" vectorEffect="non-scaling-stroke" strokeLinecap="round" />}
+          <path d={tempLine} fill="none" stroke={C_TEMP} strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinecap="round" />
+          <line x1="0" x2={VW} y1={VH} y2={VH} stroke="white" strokeOpacity="0.25" vectorEffect="non-scaling-stroke" />
+        </svg>
+
+        {grid.map((g) => (
+          <span key={g} className="pointer-events-none absolute left-0.5 -translate-y-full text-[9px] leading-none text-white/45" style={{ top: `${(yT(g) / VH) * 100}%` }}>{g}°</span>
+        ))}
+
+        {h.temp != null && (
+          <span className="pointer-events-none absolute z-10 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#0d2152] transition-[left,top] duration-75" style={{ left: pct(sel), top: `${(yT(h.temp) / VH) * 100}%`, background: C_TEMP }} />
+        )}
+        {h.humidity != null && (
+          <span className="pointer-events-none absolute z-10 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#0d2152] transition-[left,top] duration-75" style={{ left: pct(sel), top: `${(yH(h.humidity) / VH) * 100}%`, background: C_HUM }} />
+        )}
+        </div>
+
+        <Cursor ax={ax} now={now} sel={sel} />
+
+        {multiDay && <SlotDots hours={hours} now={now} sel={sel} pct={pct} />}
+
+        {/* רצועת גשם — עמודות לפי סיכוי לגשם (0–100%) */}
+        <div className="relative mt-1 h-4" aria-hidden>
+          {hours.map((hr, i) => (
+            <span key={i} className="absolute bottom-0 -translate-x-1/2" style={{ left: pct(i), width: `${(multiDay ? 92 : 70) / hours.length}%` }}>
+              <span className={`block rounded-t-[2px] ${i === sel ? "bg-white/90" : "bg-white/35"}`} style={{ height: `${Math.max(1, ((hr.rain ?? 0) / 100) * 16)}px` }} />
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {multiDay && <DayAxis ax={ax} hours={hours} />}
+
+      <div dir="rtl" className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/10 pt-2 text-[10.5px] text-white/65">
+        <span className="flex items-center gap-1"><span className="h-0.5 w-3 rounded-full" style={{ background: C_TEMP }} />טמפרטורה</span>
+        <span className="flex items-center gap-1"><span className="h-0 w-3 border-t-2 border-dashed" style={{ borderColor: C_HUM }} />לחות</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-1 rounded-t-[1px] bg-white/45" />סיכוי לגשם</span>
+        {multiDay && <SlotLegend />}
+      </div>
+    </div>
+  );
+}
+
+/** אריח מזג האוויר בדף הים — נתוני השעה הנבחרת + הגרף */
+function WeatherDeck({ s, now, sel, onSel, label }: { s: Surf; now: number; sel: number; onSel: (i: number) => void; label: string }) {
+  const h = s.hours[sel];
+  if (h.temp == null) return null;
+  return (
+    <section aria-label={`מזג האוויר ב${s.spot}`} className="relative mt-4 overflow-hidden rounded-2xl border border-white/15 bg-[#0d2152] p-3 text-white shadow-[0_18px_40px_-20px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] sm:p-4">
+      <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-[#c07f00] to-transparent" />
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="flex items-center gap-1.5 text-[14px] font-semibold">
+          <I d="M12 3v2M5.6 5.6l1.4 1.4M3 12h2M17 7l1.4-1.4M8 13a4 4 0 1 1 7.5 2M7 21h10a3 3 0 0 0 0-6 4.5 4.5 0 0 0-8.6-1A3.5 3.5 0 0 0 7 21z" className="h-4 w-4 text-gold" />
+          מזג אוויר · {s.spot}
+        </h2>
+        <span className="text-[12px] font-semibold text-white/75">{label}</span>
+      </div>
+
+      <div className="mt-2 flex items-end justify-between gap-2" aria-live="polite">
+        <span dir="ltr" className="tabular text-[34px] font-extrabold leading-none tracking-tight max-[399px]:text-[28px]">{Math.round(h.temp)}<span className="text-[18px] font-bold text-white/70">°</span></span>
+        <dl className="grid grid-cols-2 gap-1.5 text-center max-[399px]:gap-1">
+          {[
+            ["לחות", h.humidity != null ? `${Math.round(h.humidity)}%` : "—"],
+            ["סיכוי לגשם", h.rain != null ? `${Math.round(h.rain)}%` : "—"],
+          ].map(([k, v]) => (
+            <div key={k} className="whitespace-nowrap rounded-lg bg-white/[0.07] px-2.5 py-1 max-[399px]:px-1.5">
+              <dt className="text-[10px] text-white/55">{k}</dt>
+              <dd dir="ltr" className="tabular text-[13px] font-bold leading-tight max-[399px]:text-[12px]">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+
+      <div className="mt-3">
+        <WeatherChart hours={s.hours} now={now} sel={sel} onSel={onSel} />
+      </div>
+    </section>
   );
 }
 
@@ -578,6 +747,9 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
           </div>
         </div>
       </section>
+
+      {/* מזג אוויר — אותו סמן כמו בגרף הים: הזזה באחד מזיזה גם את השני */}
+      <WeatherDeck s={s} now={now} sel={sel} onSel={go} label={isNow ? "עכשיו" : `${dayLabel(h.time, today)}${slot ? ` · ${slot.label}` : ""} ${hh(h.time)}:00`} />
 
       {/* סיכום יומי — לחיצה על יום מזיזה את הקו אליו */}
       <div className="glass mt-4 overflow-hidden rounded-[var(--radius-card)]">
