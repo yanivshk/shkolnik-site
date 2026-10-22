@@ -3,7 +3,7 @@ import { REVALIDATE, TZ } from "./config";
 import { DEFAULT_SPOT_ID, spotById, type Surf, type SurfHour } from "./surf-spots";
 
 /**
- * גלישה — תחזית ים לשעה-שעה: Open-Meteo Marine (גלים, סוול, מים, גאות) + Open-Meteo Forecast (רוח). ללא מפתח.
+ * גלישה — תחזית ים לשעה-שעה: Open-Meteo Marine (גלים, סוול, מים, גאות) + Open-Meteo Forecast (רוח, טמפרטורה, לחות, גשם). ללא מפתח.
  * הנתונים נשמרים במטמון שעה (REVALIDATE.surf) — מתעדכנים פעם בשעה.
  */
 
@@ -21,7 +21,12 @@ type Marine = {
     wind_wave_height?: Series; sea_surface_temperature?: Series; sea_level_height_msl?: Series;
   };
 };
-type Wind = { hourly?: { time: string[]; wind_speed_10m: Series; wind_direction_10m: Series; wind_gusts_10m?: Series } };
+type Wind = {
+  hourly?: {
+    time: string[]; wind_speed_10m: Series; wind_direction_10m: Series; wind_gusts_10m?: Series;
+    temperature_2m?: Series; relative_humidity_2m?: Series; precipitation_probability?: Series;
+  };
+};
 
 async function get<T>(url: string): Promise<T | null> {
   try {
@@ -48,7 +53,7 @@ export async function getSurf(spotId: number = DEFAULT_SPOT_ID, days = 1): Promi
   const tz = encodeURIComponent(TZ);
   const [m, w] = await Promise.all([
     get<Marine>(`https://marine-api.open-meteo.com/v1/marine?latitude=${s.lat}&longitude=${s.lon}&hourly=wave_height,wave_period,swell_wave_height,swell_wave_period,swell_wave_direction,wind_wave_height,sea_surface_temperature,sea_level_height_msl&past_days=1&forecast_days=${MAX_SURF_DAYS + 1}&timezone=${tz}`),
-    get<Wind>(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m&wind_speed_unit=kn&past_days=1&forecast_days=${MAX_SURF_DAYS + 1}&timezone=${tz}`),
+    get<Wind>(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,relative_humidity_2m,precipitation_probability&wind_speed_unit=kn&past_days=1&forecast_days=${MAX_SURF_DAYS + 1}&timezone=${tz}`),
   ]);
   if (!m?.hourly) return null;
   const mh = m.hourly;
@@ -73,6 +78,9 @@ export async function getSurf(spotId: number = DEFAULT_SPOT_ID, days = 1): Promi
       wind: (wi >= 0 ? num(w!.hourly!.wind_speed_10m[wi]) : undefined) ?? 0,
       windDir: (wi >= 0 ? num(w!.hourly!.wind_direction_10m[wi]) : undefined) ?? 0,
       gust: wi >= 0 ? num(w!.hourly!.wind_gusts_10m?.[wi]) : undefined,
+      temp: wi >= 0 ? num(w!.hourly!.temperature_2m?.[wi]) : undefined,
+      humidity: wi >= 0 ? num(w!.hourly!.relative_humidity_2m?.[wi]) : undefined,
+      rain: wi >= 0 ? num(w!.hourly!.precipitation_probability?.[wi]) : undefined,
     });
   }
   if (hours.length <= BEFORE) return null;
@@ -85,12 +93,17 @@ function mockSurf(spotId: number, spot: string, span: number): Surf {
   const hours: SurfHour[] = Array.from({ length: span }, (_, i) => {
     const x = (i % 24) / 23;
     const wave = 0.5 + 0.7 * Math.sin(Math.PI * x) ** 2 + 0.08 * Math.sin(i);
+    const time = `${hourKey(new Date(base.getTime() + i * 3600e3))}:00`;
+    const sun = Math.sin(Math.PI * Math.min(1, Math.max(0, (Number(time.slice(11, 13)) - 6) / 14))); // 0 בלילה, 1 בצהריים
     return {
-      time: `${hourKey(new Date(base.getTime() + i * 3600e3))}:00`,
+      time,
       wave, period: 5 + 2.5 * x,
       swell: wave * 0.75, swellPeriod: 5.5 + 2.5 * x, swellDir: 290 + 20 * x, windWave: wave * 0.4,
       wind: 5 + 10 * Math.sin(Math.PI * x), windDir: 300 + 30 * x, gust: 9 + 14 * Math.sin(Math.PI * x),
       water: 27.6 + 0.3 * x, tide: 0.25 * Math.sin((i / 12.4) * 2 * Math.PI),
+      temp: 21 + 7 * sun + (i / 24) * 0.4,
+      humidity: 74 - 24 * sun,
+      rain: Math.max(0, Math.round(60 * Math.sin((i / 170) * Math.PI * 3) - 15)),
     };
   });
   return { spotId, spot, now: BEFORE, hours };
