@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { RainRadar } from "@/components/radar";
 import { DEFAULT_SPOT_ID, SURF_SPOTS, dirFull, dirShort, spotById, waveLabel, wavePower, type Surf, type SurfHour } from "@/lib/surf-spots";
 
 const STORE_KEY = "surf-spot";
@@ -385,41 +386,197 @@ function WeatherChart({ hours, now, sel, onSel }: { hours: SurfHour[]; now: numb
   );
 }
 
-/** אריח מזג האוויר בדף הים — נתוני השעה הנבחרת + הגרף */
-function WeatherDeck({ s, now, sel, onSel, label }: { s: Surf; now: number; sel: number; onSel: (i: number) => void; label: string }) {
-  const h = s.hours[sel];
-  if (h.temp == null) return null;
+type WxPlace = { name: string; lat: number; lon: number };
+const WX_KEY = "sea-weather-place";
+function readWxPlace(): WxPlace | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(WX_KEY) ?? "null");
+    return v && typeof v.lat === "number" && typeof v.lon === "number" && typeof v.name === "string" ? v : null;
+  } catch {
+    return null;
+  }
+}
+function saveWxPlace(p: WxPlace | null) {
+  try { if (p) localStorage.setItem(WX_KEY, JSON.stringify(p)); else localStorage.removeItem(WX_KEY); } catch { /* ignore */ }
+}
+
+/**
+ * מיקום לגרף מזג האוויר: ברירת מחדל — החוף שנבחר; אפשר לבחור כל עיר (נשמר בדפדפן).
+ * הנתונים של עיר אחרת נשלפים לשעה-שעה ומיושרים לאותן שעות של גרף הים, כך שהסמן נשאר משותף.
+ */
+function useWxPlace(hours: SurfHour[]) {
+  const [place, setPlace] = useState<WxPlace | null>(null);
+  const [data, setData] = useState<Map<string, { temp?: number; humidity?: number; rain?: number }> | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async (p: WxPlace | null) => {
+    if (!p) { setData(null); return; }
+    setBusy(true);
+    try {
+      const r = await fetch(`/api/forecast?lat=${p.lat}&lon=${p.lon}`);
+      if (r.ok) {
+        const list = (await r.json()) as { time: string; temp?: number; humidity?: number; rain?: number }[];
+        setData(new Map(list.map((x) => [x.time, x])));
+      }
+    } catch { /* keep last */ }
+    setBusy(false);
+  }, []);
+
+  useEffect(() => {
+    const saved = readWxPlace();
+    if (saved) { setPlace(saved); load(saved); }
+    const id = setInterval(() => { const p = readWxPlace(); if (p) load(p); }, REFRESH_MS);
+    return () => clearInterval(id);
+  }, [load]);
+
+  const choose = (p: WxPlace | null) => { setPlace(p); saveWxPlace(p); load(p); };
+  const merged = useMemo(
+    () => (place && data ? hours.map((h) => ({ ...h, ...(data.get(h.time) ?? { temp: undefined, humidity: undefined, rain: undefined }) })) : hours),
+    [hours, place, data],
+  );
+  return { place, choose, hours: merged, busy };
+}
+
+/** בחירת עיר לגרף מזג האוויר: חיפוש חופשי (כמו בעמוד הבית) + חזרה לחוף שנבחר */
+function PlacePicker({ current, spotName, onChoose }: { current: string; spotName: string; onChoose: (p: WxPlace | null) => void }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const [q, setQ] = useState("");
+  const [results, setResults] = useState<{ name: string; country: string; lat: number; lon: number }[]>([]);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+
+  const place = useCallback(() => {
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) setPos({ top: r.bottom + 8, right: window.innerWidth - r.right });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    place();
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!popRef.current?.contains(t) && !btnRef.current?.contains(t)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, { passive: true });
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place);
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, place]);
+
+  useEffect(() => {
+    if (q.trim().length < 2) { setResults([]); return; }
+    let live = true;
+    const t = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/places?q=${encodeURIComponent(q.trim())}`);
+        if (live && r.ok) setResults(await r.json());
+      } catch { /* ignore */ }
+    }, 300);
+    return () => { live = false; clearTimeout(t); };
+  }, [q]);
+
+  const pick = (p: WxPlace | null) => { setOpen(false); setQ(""); setResults([]); onChoose(p); };
+
   return (
-    <section aria-label={`מזג האוויר ב${s.spot}`} className="relative mt-4 overflow-hidden rounded-2xl border border-white/15 bg-[#0d2152] p-3 text-white shadow-[0_18px_40px_-20px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] sm:p-4">
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-label={`מיקום מזג האוויר: ${current}. לחץ לשינוי`}
+        className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/25 bg-white/10 px-2 py-0.5 text-[14px] font-semibold text-white"
+      >
+        <I d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10zM12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" className="h-4 w-4 text-gold" />
+        {current}
+        <I d="m6 9 6 6 6-6" className="h-3 w-3" />
+      </button>
+      {open && pos && createPortal(
+        <div ref={popRef} className="glass-strong fixed z-[70] w-[min(92vw,300px)] !bg-white/95 rounded-2xl p-3 text-ink shadow-xl" style={{ top: pos.top, right: pos.right }} dir="rtl">
+          <label className="mb-2 block text-[12px] font-semibold text-muted" htmlFor="sea-wx-q">מיקום לתחזית מזג האוויר</label>
+          <input
+            id="sea-wx-q"
+            autoFocus
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && results[0]) { e.preventDefault(); pick(results[0]); } }}
+            enterKeyHint="search"
+            placeholder="למשל: ירושלים"
+            className="w-full rounded-xl border border-line bg-white px-3 py-2 text-[14px] outline-none focus:border-royal"
+          />
+          <ul className="mt-2 max-h-56 overflow-auto">
+            <li>
+              <button type="button" onClick={() => pick(null)} className="w-full rounded-lg px-2 py-2 text-right text-[14px] hover:bg-royal/[0.06]">
+                <span className="font-semibold">{spotName}</span>
+                <span className="text-[12px] text-muted"> · לפי החוף שנבחר</span>
+              </button>
+            </li>
+            {results.map((p) => (
+              <li key={`${p.lat},${p.lon}`}>
+                <button type="button" onClick={() => pick({ name: p.name, lat: p.lat, lon: p.lon })} className="w-full rounded-lg px-2 py-2 text-right text-[14px] hover:bg-royal/[0.06]">
+                  <span className="font-semibold">{p.name}</span>
+                  {p.country && <span className="text-[12px] text-muted"> · {p.country}</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}
+
+/** אריח מזג האוויר בדף הים — בחירת עיר, נתוני השעה הנבחרת + הגרף */
+function WeatherDeck({ wx, s, now, sel, onSel, label }: { wx: ReturnType<typeof useWxPlace>; s: Surf; now: number; sel: number; onSel: (i: number) => void; label: string }) {
+  const h = wx.hours[sel];
+  const name = wx.place?.name ?? s.spot;
+  return (
+    <section aria-label={`מזג האוויר ב${name}`} className={`relative overflow-hidden rounded-2xl border border-white/15 bg-[#0d2152] p-3 text-white shadow-[0_18px_40px_-20px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] transition-opacity sm:p-4 ${wx.busy ? "opacity-60" : ""}`} aria-busy={wx.busy}>
       <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-[#c07f00] to-transparent" />
       <div className="flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-1.5 text-[14px] font-semibold">
-          <I d="M12 3v2M5.6 5.6l1.4 1.4M3 12h2M17 7l1.4-1.4M8 13a4 4 0 1 1 7.5 2M7 21h10a3 3 0 0 0 0-6 4.5 4.5 0 0 0-8.6-1A3.5 3.5 0 0 0 7 21z" className="h-4 w-4 text-gold" />
-          מזג אוויר · {s.spot}
-        </h2>
+        <PlacePicker current={name} spotName={s.spot} onChoose={wx.choose} />
         <span className="text-[12px] font-semibold text-white/75">{label}</span>
       </div>
 
-      <div className="mt-2 flex items-end justify-between gap-2" aria-live="polite">
-        <span dir="ltr" className="tabular text-[34px] font-extrabold leading-none tracking-tight max-[399px]:text-[28px]">{Math.round(h.temp)}<span className="text-[18px] font-bold text-white/70">°</span></span>
-        <dl className="grid grid-cols-2 gap-1.5 text-center max-[399px]:gap-1">
-          {[
-            ["לחות", h.humidity != null ? `${Math.round(h.humidity)}%` : "—"],
-            ["סיכוי לגשם", h.rain != null ? `${Math.round(h.rain)}%` : "—"],
-          ].map(([k, v]) => (
-            <div key={k} className="whitespace-nowrap rounded-lg bg-white/[0.07] px-2.5 py-1 max-[399px]:px-1.5">
-              <dt className="text-[10px] text-white/55">{k}</dt>
-              <dd dir="ltr" className="tabular text-[13px] font-bold leading-tight max-[399px]:text-[12px]">{v}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-
-      <div className="mt-3">
-        <WeatherChart hours={s.hours} now={now} sel={sel} onSel={onSel} />
-      </div>
+      {h?.temp == null ? (
+        <p className="py-8 text-center text-[13px] text-white/70">אין תחזית מזג אוויר למיקום הזה כרגע</p>
+      ) : (
+        <>
+          <div className="mt-2 flex items-end justify-between gap-2" aria-live="polite">
+            <span dir="ltr" className="tabular text-[34px] font-extrabold leading-none tracking-tight max-[399px]:text-[28px]">{Math.round(h.temp)}<span className="text-[18px] font-bold text-white/70">°</span></span>
+            <dl className="grid grid-cols-2 gap-1.5 text-center max-[399px]:gap-1">
+              {[
+                ["לחות", h.humidity != null ? `${Math.round(h.humidity)}%` : "—"],
+                ["סיכוי לגשם", h.rain != null ? `${Math.round(h.rain)}%` : "—"],
+              ].map(([k, v]) => (
+                <div key={k} className="whitespace-nowrap rounded-lg bg-white/[0.07] px-2.5 py-1 max-[399px]:px-1.5">
+                  <dt className="text-[10px] text-white/55">{k}</dt>
+                  <dd dir="ltr" className="tabular text-[13px] font-bold leading-tight max-[399px]:text-[12px]">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+          <div className="mt-3">
+            <WeatherChart hours={wx.hours} now={now} sel={sel} onSel={onSel} />
+          </div>
+        </>
+      )}
     </section>
   );
+}
+
+/** כותרת לכל אריח בדף הים */
+function DeckTitle({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <h2 className={`mb-2 text-[18px] font-extrabold text-navy ${className}`}>{children}</h2>;
 }
 
 /* ---------------- משותף: נתונים + בחירת חוף ---------------- */
@@ -606,6 +763,7 @@ const dateShort = (t: string) => `${t.slice(8, 10)}.${t.slice(5, 7)}`;
 /** אריח הים המלא: נתוני השעה הנבחרת + גרף רציף לכל הימים, עם גרירה, קפיצה ליום, וטבלת סיכום יומית */
 export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: number }) {
   const { s, busy, choose, now } = useSurf(initial, days);
+  const wx = useWxPlace(s?.hours ?? []);
   const [picked, setPicked] = useState<number | null>(null);
   useEffect(() => setPicked(null), [s?.spotId]);
 
@@ -649,6 +807,7 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
 
   return (
     <div aria-busy={busy}>
+      <DeckTitle>תחזית ים, גלים ורוח</DeckTitle>
       <section
         aria-label={`מצב הים ב${s.spot}`}
         className={`relative overflow-hidden rounded-2xl border border-white/15 bg-[#0d2152] p-3 text-white shadow-[0_18px_40px_-20px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] transition-opacity sm:p-4 ${busy ? "opacity-60" : ""}`}
@@ -749,7 +908,12 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
       </section>
 
       {/* מזג אוויר — אותו סמן כמו בגרף הים: הזזה באחד מזיזה גם את השני */}
-      <WeatherDeck s={s} now={now} sel={sel} onSel={go} label={isNow ? "עכשיו" : `${dayLabel(h.time, today)}${slot ? ` · ${slot.label}` : ""} ${hh(h.time)}:00`} />
+      <DeckTitle className="mt-6">תחזית מזג אוויר</DeckTitle>
+      <WeatherDeck wx={wx} s={s} now={now} sel={sel} onSel={go} label={isNow ? "עכשיו" : `${dayLabel(h.time, today)}${slot ? ` · ${slot.label}` : ""} ${hh(h.time)}:00`} />
+
+      {/* מכ"ם גשם — השעתיים האחרונות, עם סימון המיקום שנבחר */}
+      <DeckTitle className="mt-6">מכ״ם גשם</DeckTitle>
+      <RainRadar marker={wx.place ?? (spotById(s.spotId) ? { name: s.spot, lat: spotById(s.spotId)!.lat, lon: spotById(s.spotId)!.lon } : undefined)} />
 
       {/* סיכום יומי — לחיצה על יום מזיזה את הקו אליו */}
       <div className="glass mt-4 overflow-hidden rounded-[var(--radius-card)]">
