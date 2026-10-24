@@ -832,7 +832,7 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
         <NowCard hours={wx.hours} now={now} coastal={!wx.place} place={wx.place?.name ?? s.spot} />
       </div>
 
-      <DeckTitle className="mt-6">השבוע במבט אחד <span className="text-[12.5px] font-semibold text-muted">בוקר · צהריים · ערב — לחיצה מזיזה את הגרפים</span></DeckTitle>
+      <DeckTitle className="mt-6">השבוע במבט אחד <span className="text-[12.5px] font-semibold text-muted">בוקר · צהריים · ערב</span></DeckTitle>
       <div className={`transition-opacity ${wx.busy ? "opacity-60" : ""}`}>
         <WeekGrid hours={wx.hours} now={now} sel={sel} coastal={!wx.place} onSel={go} />
       </div>
