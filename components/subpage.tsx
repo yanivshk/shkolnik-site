@@ -51,6 +51,7 @@ export function SubPage({ title, subtitle, eyebrow, stats, children, jsonLd, com
           <div className="relative isolate overflow-hidden rounded-2xl bg-gradient-to-br from-navy via-royal to-royal-2 px-4 py-2.5 text-white shadow-[0_14px_34px_-22px_rgba(19,48,110,0.8)]">
             <div className="maccabi-stripes absolute inset-0 -z-10" />
             <h1 className="text-[22px] font-black leading-tight">{title}</h1>
+            {subtitle && <p className="truncate text-[12.5px] font-medium text-white/80">{subtitle}</p>}
           </div>
         ) : (
         <div className="relative isolate overflow-hidden rounded-[28px] bg-gradient-to-br from-navy via-royal to-royal-2 px-6 py-9 text-white shadow-[0_24px_60px_-28px_rgba(19,48,110,0.8)]">
