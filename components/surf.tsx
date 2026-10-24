@@ -450,8 +450,22 @@ function useWxPlace(hours: SurfHour[]) {
   return { place, choose, hours: merged, busy };
 }
 
-/** בחירת עיר לגרף מזג האוויר: חיפוש חופשי (כמו בעמוד הבית) + חזרה לחוף שנבחר */
-function PlacePicker({ current, spotName, onChoose }: { current: string; spotName: string; onChoose: (p: WxPlace | null) => void }) {
+/** ערים קבועות לבחירה מהירה */
+const PRESET_CITIES: WxPlace[] = [
+  { name: "תל אביב", lat: 32.0853, lon: 34.7818 },
+  { name: "לוד", lat: 31.951, lon: 34.8881 },
+  { name: "בת ים", lat: 32.0171, lon: 34.7454 },
+  { name: "אשדוד", lat: 31.8014, lon: 34.6435 },
+  { name: "חיפה", lat: 32.794, lon: 34.9896 },
+  { name: "קיסריה", lat: 32.519, lon: 34.9045 },
+  { name: "קרית שמונה", lat: 33.2073, lon: 35.5697 },
+  { name: "אילת", lat: 29.5577, lon: 34.9519 },
+  { name: "ים המלח", lat: 31.2005, lon: 35.3625 },
+  { name: "באר שבע", lat: 31.252, lon: 34.7915 },
+];
+
+/** בחירת עיר לגרף מזג האוויר: ערים קבועות, חיפוש חופשי (כמו בעמוד הבית) וחזרה לחוף שנבחר */
+function PlacePicker({ current, spotName, onChoose, beach }: { current: string; spotName: string; onChoose: (p: WxPlace | null) => void; beach: boolean }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
   const [q, setQ] = useState("");
@@ -513,21 +527,34 @@ function PlacePicker({ current, spotName, onChoose }: { current: string; spotNam
         <I d="m6 9 6 6 6-6" className="h-3 w-3" />
       </button>
       {open && pos && createPortal(
-        <div ref={popRef} className="glass-strong fixed z-[70] w-[min(92vw,300px)] !bg-white/95 rounded-2xl p-3 text-ink shadow-xl" style={{ top: pos.top, right: pos.right }} dir="rtl">
-          <label className="mb-2 block text-[12px] font-semibold text-muted" htmlFor="sea-wx-q">מיקום לתחזית מזג האוויר</label>
+        <div ref={popRef} className="glass-strong fixed z-[70] w-[min(92vw,300px)] !bg-white rounded-2xl p-3 text-ink shadow-xl" style={{ top: pos.top, right: pos.right }} dir="rtl">
+          <label className="mb-2 block text-[12px] font-semibold text-muted" htmlFor="sea-wx-q">בחירת מיקום · או חיפוש כל עיר</label>
+          {/* ערים קבועות */}
+          <div className="grid grid-cols-2 gap-1">
+            {PRESET_CITIES.map((c) => (
+              <button
+                key={c.name}
+                type="button"
+                onClick={() => pick(c)}
+                aria-pressed={!beach && current === c.name}
+                className={`rounded-lg px-2 py-1.5 text-right text-[14px] ${!beach && current === c.name ? "bg-royal/10 font-bold text-royal" : "hover:bg-royal/[0.06]"}`}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
           <input
             id="sea-wx-q"
-            autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && results[0]) { e.preventDefault(); pick(results[0]); } }}
             enterKeyHint="search"
             placeholder="למשל: ירושלים"
-            className="w-full rounded-xl border border-line bg-white px-3 py-2 text-[14px] outline-none focus:border-royal"
+            className="mt-2 w-full rounded-xl border border-line bg-white px-3 py-2 text-[14px] outline-none focus:border-royal"
           />
-          <ul className="mt-2 max-h-56 overflow-auto">
+          <ul className="mt-2 max-h-56 overflow-auto border-t border-line pt-1">
             <li>
-              <button type="button" onClick={() => pick(null)} className="w-full rounded-lg px-2 py-2 text-right text-[14px] hover:bg-royal/[0.06]">
+              <button type="button" onClick={() => pick(null)} aria-pressed={beach} className={`w-full rounded-lg px-2 py-2 text-right text-[14px] ${beach ? "bg-royal/10 text-royal" : "hover:bg-royal/[0.06]"}`}>
                 <span className="font-semibold">{spotName}</span>
                 <span className="text-[12px] text-muted"> · לפי החוף שנבחר</span>
               </button>
@@ -556,7 +583,7 @@ function WeatherDeck({ wx, s, now, sel, onSel, label }: { wx: ReturnType<typeof 
     <section aria-label={`מזג האוויר ב${name}`} className={`relative overflow-hidden rounded-2xl border border-white/15 bg-[#0d2152] p-3 text-white shadow-[0_18px_40px_-20px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] transition-opacity sm:p-4 ${wx.busy ? "opacity-60" : ""}`} aria-busy={wx.busy}>
       <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-[#c07f00] to-transparent" />
       <div className="flex items-center justify-between gap-2">
-        <PlacePicker current={name} spotName={s.spot} onChoose={wx.choose} />
+        <PlacePicker current={name} spotName={s.spot} onChoose={wx.choose} beach={!wx.place} />
         <span className="text-[12px] font-semibold text-white/75">{label}</span>
       </div>
 
@@ -823,7 +850,7 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
       {/* מיקום — קובע את "עכשיו בחוץ", "השבוע במבט אחד" וגרף מזג האוויר. נתוני הים תמיד מהחוף שנבחר */}
       <div className="mb-3 flex flex-wrap items-center gap-2 rounded-2xl bg-navy px-3 py-2 text-white">
         <span className="text-[13px] font-semibold text-white/70">מיקום:</span>
-        <PlacePicker current={wx.place?.name ?? s.spot} spotName={s.spot} onChoose={wx.choose} />
+        <PlacePicker current={wx.place?.name ?? s.spot} spotName={s.spot} onChoose={wx.choose} beach={!wx.place} />
         <span className="text-[12px] text-white/60">{wx.place ? "עיר — בלי נתוני ים" : "חוף — כולל ים"}</span>
       </div>
 
