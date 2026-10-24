@@ -28,8 +28,10 @@ function Icon({ name, className = "h-5 w-5" }: { name: string; className?: strin
 
 /* ---------- מעטפת ---------- */
 
-export function SubPage({ title, subtitle, eyebrow, stats, children, jsonLd }: {
+export function SubPage({ title, subtitle, eyebrow, stats, children, jsonLd, compact = false }: {
   title: string; subtitle?: string; eyebrow?: string; stats?: string[]; children: React.ReactNode; jsonLd?: object;
+  /** פתיח מינימלי: רק הכותרת, בשורה אחת דקה (דף הים) */
+  compact?: boolean;
 }) {
   return (
     <>
@@ -45,6 +47,12 @@ export function SubPage({ title, subtitle, eyebrow, stats, children, jsonLd }: {
         </span>
       </header>
       <main className="mx-auto max-w-3xl px-4 pb-20 pt-6">
+        {compact ? (
+          <div className="relative isolate overflow-hidden rounded-2xl bg-gradient-to-br from-navy via-royal to-royal-2 px-4 py-2.5 text-white shadow-[0_14px_34px_-22px_rgba(19,48,110,0.8)]">
+            <div className="maccabi-stripes absolute inset-0 -z-10" />
+            <h1 className="text-[22px] font-black leading-tight">{title}</h1>
+          </div>
+        ) : (
         <div className="relative isolate overflow-hidden rounded-[28px] bg-gradient-to-br from-navy via-royal to-royal-2 px-6 py-9 text-white shadow-[0_24px_60px_-28px_rgba(19,48,110,0.8)]">
           <div className="maccabi-stripes absolute inset-0 -z-10" />
           <div className="absolute -left-20 -top-20 -z-10 h-56 w-56 rounded-full bg-gold/30 blur-3xl" />
@@ -65,7 +73,8 @@ export function SubPage({ title, subtitle, eyebrow, stats, children, jsonLd }: {
             </div>
           )}
         </div>
-        <div className="mt-6">{children}</div>
+        )}
+        <div className={compact ? "mt-3" : "mt-6"}>{children}</div>
       </main>
     </>
   );
