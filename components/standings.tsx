@@ -28,10 +28,13 @@ function TeamCell({ r, kind }: { r: Row; kind: Table["kind"] }) {
           {r.live && <LiveDot />}
         </div>
         {r.live ? (
-          <div className="flex items-center gap-1 text-[11.5px] font-bold text-down">
-            <span>חי</span>
-            <span dir="ltr" className="tabular">{r.live.my}–{r.live.their}</span>
-            <span className="truncate font-semibold text-muted">מול {r.live.opponent}{r.live.clock ? ` · ${r.live.clock}` : ""}</span>
+          // תוצאה חיה: התוצאה של הקבוצה בשורה קודם, הדקה, והיריבה
+          <div className="mt-0.5 flex min-w-0 items-center gap-1 text-[11.5px]">
+            <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md bg-down px-1.5 py-px font-extrabold text-white">
+              <span dir="ltr" className="tabular">{r.live.my}–{r.live.their}</span>
+              {r.live.clock && <span dir="ltr" className="tabular font-bold opacity-90">{r.live.clock}</span>}
+            </span>
+            <span className="truncate font-semibold text-muted">מול {r.live.opponent}</span>
           </div>
         ) : r.form.length > 0 && kind !== "winner" ? (
           // 5 התוצאות האחרונות — האחרונה מימין
