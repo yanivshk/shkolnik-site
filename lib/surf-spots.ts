@@ -40,6 +40,11 @@ export type SurfHour = {
   temp?: number;         // טמפרטורת אוויר, °C
   humidity?: number;     // לחות יחסית, %
   rain?: number;         // סיכוי לגשם, %
+  feel?: number;         // מרגיש כמו, °C
+  code?: number;         // קוד מזג אוויר (WMO): בהיר / מעונן / גשם...
+  cloud?: number;        // כיסוי עננים, %
+  vis?: number;          // ראות, מטרים
+  uv?: number;           // מדד קרינת UV
 };
 
 /** תחזית ים ל-24 שעות (מ-2 שעות לפני עכשיו), לחוף שנבחר */

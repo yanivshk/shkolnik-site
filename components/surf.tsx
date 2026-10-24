@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { RainRadar } from "@/components/radar";
+import { NowCard, WeekGrid } from "@/components/outdoor";
+import type { HourlyWeather } from "@/lib/weather";
 import { DEFAULT_SPOT_ID, SURF_SPOTS, dirFull, dirShort, spotById, waveLabel, wavePower, type Surf, type SurfHour } from "@/lib/surf-spots";
 
 const STORE_KEY = "surf-spot";
@@ -406,7 +408,7 @@ function saveWxPlace(p: WxPlace | null) {
  */
 function useWxPlace(hours: SurfHour[]) {
   const [place, setPlace] = useState<WxPlace | null>(null);
-  const [data, setData] = useState<Map<string, { temp?: number; humidity?: number; rain?: number }> | null>(null);
+  const [data, setData] = useState<Map<string, HourlyWeather> | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async (p: WxPlace | null) => {
@@ -415,7 +417,7 @@ function useWxPlace(hours: SurfHour[]) {
     try {
       const r = await fetch(`/api/forecast?lat=${p.lat}&lon=${p.lon}`);
       if (r.ok) {
-        const list = (await r.json()) as { time: string; temp?: number; humidity?: number; rain?: number }[];
+        const list = (await r.json()) as HourlyWeather[];
         setData(new Map(list.map((x) => [x.time, x])));
       }
     } catch { /* keep last */ }
@@ -431,7 +433,18 @@ function useWxPlace(hours: SurfHour[]) {
 
   const choose = (p: WxPlace | null) => { setPlace(p); saveWxPlace(p); load(p); };
   const merged = useMemo(
-    () => (place && data ? hours.map((h) => ({ ...h, ...(data.get(h.time) ?? { temp: undefined, humidity: undefined, rain: undefined }) })) : hours),
+    () =>
+      place && data
+        ? hours.map((h) => {
+            // בעיר שנבחרה: כל נתוני מזג האוויר מהעיר; נתוני הים (גלים) נשארים של החוף ולא מוצגים
+            const d = data.get(h.time);
+            return {
+              ...h,
+              temp: d?.temp, humidity: d?.humidity, rain: d?.rain, feel: d?.feel, code: d?.code, cloud: d?.cloud, vis: d?.vis, uv: d?.uv,
+              wind: d?.wind ?? h.wind, windDir: d?.windDir ?? h.windDir, gust: d?.gust,
+            };
+          })
+        : hours,
     [hours, place, data],
   );
   return { place, choose, hours: merged, busy };
@@ -807,7 +820,24 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
 
   return (
     <div aria-busy={busy}>
-      <DeckTitle>תחזית ים, גלים ורוח</DeckTitle>
+      {/* מיקום — קובע את "עכשיו בחוץ", "השבוע במבט אחד" וגרף מזג האוויר. נתוני הים תמיד מהחוף שנבחר */}
+      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-2xl bg-navy px-3 py-2 text-white">
+        <span className="text-[13px] font-semibold text-white/70">מיקום:</span>
+        <PlacePicker current={wx.place?.name ?? s.spot} spotName={s.spot} onChoose={wx.choose} />
+        <span className="text-[12px] text-white/60">{wx.place ? "עיר — בלי נתוני ים" : "חוף — כולל ים"}</span>
+      </div>
+
+      <DeckTitle>עכשיו בחוץ</DeckTitle>
+      <div className={`transition-opacity ${wx.busy ? "opacity-60" : ""}`}>
+        <NowCard hours={wx.hours} now={now} coastal={!wx.place} place={wx.place?.name ?? s.spot} />
+      </div>
+
+      <DeckTitle className="mt-6">השבוע במבט אחד <span className="text-[12.5px] font-semibold text-muted">בוקר · צהריים · ערב — לחיצה מזיזה את הגרפים</span></DeckTitle>
+      <div className={`transition-opacity ${wx.busy ? "opacity-60" : ""}`}>
+        <WeekGrid hours={wx.hours} now={now} sel={sel} coastal={!wx.place} onSel={go} />
+      </div>
+
+      <DeckTitle className="mt-6">תחזית ים, גלים ורוח</DeckTitle>
       <section
         aria-label={`מצב הים ב${s.spot}`}
         className={`relative overflow-hidden rounded-2xl border border-white/15 bg-[#0d2152] p-3 text-white shadow-[0_18px_40px_-20px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] transition-opacity sm:p-4 ${busy ? "opacity-60" : ""}`}

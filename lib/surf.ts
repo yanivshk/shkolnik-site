@@ -25,6 +25,7 @@ type Wind = {
   hourly?: {
     time: string[]; wind_speed_10m: Series; wind_direction_10m: Series; wind_gusts_10m?: Series;
     temperature_2m?: Series; relative_humidity_2m?: Series; precipitation_probability?: Series;
+    apparent_temperature?: Series; weather_code?: Series; cloud_cover?: Series; visibility?: Series; uv_index?: Series;
   };
 };
 
@@ -48,20 +49,22 @@ export async function getSurf(spotId: number = DEFAULT_SPOT_ID, days = 1): Promi
   const s = spotById(spotId);
   if (!s) return null;
   const span = BEFORE + Math.max(1, Math.min(MAX_SURF_DAYS, days)) * 24;
-  if (process.env.MOCK_DATA === "1") return mockSurf(s.id, s.name, span);
+  if (process.env.MOCK_DATA === "1") return mockSurf(s.id, s.name, days > 1 ? span + 23 - Number(hourKey().slice(11, 13)) : span);
 
   const tz = encodeURIComponent(TZ);
   const [m, w] = await Promise.all([
     get<Marine>(`https://marine-api.open-meteo.com/v1/marine?latitude=${s.lat}&longitude=${s.lon}&hourly=wave_height,wave_period,swell_wave_height,swell_wave_period,swell_wave_direction,wind_wave_height,sea_surface_temperature,sea_level_height_msl&past_days=1&forecast_days=${MAX_SURF_DAYS + 1}&timezone=${tz}`),
-    get<Wind>(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,relative_humidity_2m,precipitation_probability&wind_speed_unit=kn&past_days=1&forecast_days=${MAX_SURF_DAYS + 1}&timezone=${tz}`),
+    get<Wind>(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,relative_humidity_2m,precipitation_probability,apparent_temperature,weather_code,cloud_cover,visibility,uv_index&wind_speed_unit=kn&past_days=1&forecast_days=${MAX_SURF_DAYS + 1}&timezone=${tz}`),
   ]);
   if (!m?.hourly) return null;
   const mh = m.hourly;
   const start = mh.time.findIndex((t) => t.startsWith(hourKey())) - BEFORE;
   if (start < 0) return null;
+  // בתצוגה השבועית — עד סוף היום האחרון (כדי שיהיו בוקר/צהריים/ערב לכל יום)
+  const lastDay = days > 1 ? mh.time[start + BEFORE + (days - 1) * 24]?.slice(0, 10) : undefined;
 
   const hours: SurfHour[] = [];
-  for (let i = start; i < Math.min(start + span, mh.time.length); i++) {
+  for (let i = start; i < mh.time.length && (lastDay ? mh.time[i].slice(0, 10) <= lastDay : i < start + span); i++) {
     const wave = mh.wave_height[i];
     if (typeof wave !== "number") break;
     const wi = w?.hourly?.time.indexOf(mh.time[i]) ?? -1;
@@ -81,6 +84,11 @@ export async function getSurf(spotId: number = DEFAULT_SPOT_ID, days = 1): Promi
       temp: wi >= 0 ? num(w!.hourly!.temperature_2m?.[wi]) : undefined,
       humidity: wi >= 0 ? num(w!.hourly!.relative_humidity_2m?.[wi]) : undefined,
       rain: wi >= 0 ? num(w!.hourly!.precipitation_probability?.[wi]) : undefined,
+      feel: wi >= 0 ? num(w!.hourly!.apparent_temperature?.[wi]) : undefined,
+      code: wi >= 0 ? num(w!.hourly!.weather_code?.[wi]) : undefined,
+      cloud: wi >= 0 ? num(w!.hourly!.cloud_cover?.[wi]) : undefined,
+      vis: wi >= 0 ? num(w!.hourly!.visibility?.[wi]) : undefined,
+      uv: wi >= 0 ? num(w!.hourly!.uv_index?.[wi]) : undefined,
     });
   }
   if (hours.length <= BEFORE) return null;
@@ -103,6 +111,7 @@ function mockSurf(spotId: number, spot: string, span: number): Surf {
       water: 27.6 + 0.3 * x, tide: 0.25 * Math.sin((i / 12.4) * 2 * Math.PI),
       temp: 21 + 7 * sun + (i / 24) * 0.4,
       humidity: 74 - 24 * sun,
+      feel: 22 + 9 * sun, code: i > 120 ? 61 : sun > 0.6 ? 2 : 1, cloud: i > 120 ? 95 : 30 + 30 * sun, vis: 30000, uv: 7 * sun,
       rain: Math.max(0, Math.round(60 * Math.sin((i / 170) * Math.PI * 3) - 15)),
     };
   });
