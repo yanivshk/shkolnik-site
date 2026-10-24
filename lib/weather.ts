@@ -78,7 +78,11 @@ export async function searchPlaces(q: string): Promise<Place[]> {
 
 /* ---------------- תחזית שעתית שבועית (לגרף מזג האוויר בדף הים) ---------------- */
 
-export type HourlyWeather = { time: string; temp?: number; humidity?: number; rain?: number };
+export type HourlyWeather = {
+  time: string; temp?: number; humidity?: number; rain?: number;
+  feel?: number; code?: number; cloud?: number; vis?: number; uv?: number;
+  wind?: number; windDir?: number; gust?: number; // רוח בקשר, כמו בנתוני הים
+};
 
 /**
  * טמפרטורה, לחות וסיכוי לגשם לשעה-שעה, מאתמול ועד 8 ימים קדימה.
@@ -92,21 +96,28 @@ export async function getHourly(lat: number, lon: number): Promise<HourlyWeather
         .format(new Date(base + i * 3600e3)).replace(" ", "T").slice(0, 13) + ":00";
       const sun = Math.sin(Math.PI * Math.min(1, Math.max(0, (Number(time.slice(11, 13)) - 6) / 14)));
       const cool = (lat - 31.5) * 1.5; // עיר צפונית — קצת יותר קרירה (לנתוני דמה בלבד)
-      return { time, temp: 19 - cool + 8 * sun, humidity: 80 - 30 * sun, rain: Math.max(0, Math.round(70 * Math.sin((i / 216) * Math.PI * 4) - 20)) };
+      const rain = Math.max(0, Math.round(70 * Math.sin((i / 216) * Math.PI * 4) - 20));
+      return { time, temp: 19 - cool + 8 * sun, humidity: 80 - 30 * sun, rain, feel: 18 - cool + 9 * sun, code: rain > 50 ? 61 : sun > 0.5 ? 1 : 2, cloud: rain > 50 ? 90 : 25, vis: 40000, uv: 8 * sun, wind: 4 + 9 * sun, windDir: 300, gust: 8 + 12 * sun };
     });
   }
-  type Hourly = { hourly?: { time: string[]; temperature_2m?: (number | null)[]; relative_humidity_2m?: (number | null)[]; precipitation_probability?: (number | null)[] } };
+  type S = (number | null)[] | undefined;
+  type Hourly = { hourly?: { time: string[]; temperature_2m?: S; relative_humidity_2m?: S; precipitation_probability?: S; apparent_temperature?: S; weather_code?: S; cloud_cover?: S; visibility?: S; uv_index?: S; wind_speed_10m?: S; wind_direction_10m?: S; wind_gusts_10m?: S } };
   try {
     const res = await fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}` +
-        "&hourly=temperature_2m,relative_humidity_2m,precipitation_probability&past_days=1&forecast_days=8&timezone=Asia%2FJerusalem",
+        "&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,apparent_temperature,weather_code,cloud_cover,visibility,uv_index,wind_speed_10m,wind_direction_10m,wind_gusts_10m" +
+        "&wind_speed_unit=kn&past_days=1&forecast_days=8&timezone=Asia%2FJerusalem",
       { next: { revalidate: 1800 }, signal: AbortSignal.timeout(8000) },
     );
     if (!res.ok) return null;
     const h = ((await res.json()) as Hourly).hourly;
     if (!h) return null;
     const v = (a: (number | null)[] | undefined, i: number) => (typeof a?.[i] === "number" ? (a[i] as number) : undefined);
-    return h.time.map((time, i) => ({ time, temp: v(h.temperature_2m, i), humidity: v(h.relative_humidity_2m, i), rain: v(h.precipitation_probability, i) }));
+    return h.time.map((time, i) => ({
+      time, temp: v(h.temperature_2m, i), humidity: v(h.relative_humidity_2m, i), rain: v(h.precipitation_probability, i),
+      feel: v(h.apparent_temperature, i), code: v(h.weather_code, i), cloud: v(h.cloud_cover, i), vis: v(h.visibility, i), uv: v(h.uv_index, i),
+      wind: v(h.wind_speed_10m, i), windDir: v(h.wind_direction_10m, i), gust: v(h.wind_gusts_10m, i),
+    }));
   } catch {
     return null;
   }
