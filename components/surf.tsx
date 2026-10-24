@@ -465,7 +465,7 @@ const PRESET_CITIES: WxPlace[] = [
 ];
 
 /** בחירת עיר לגרף מזג האוויר: ערים קבועות, חיפוש חופשי (כמו בעמוד הבית) וחזרה לחוף שנבחר */
-function PlacePicker({ current, spotName, onChoose, beach }: { current: string; spotName: string; onChoose: (p: WxPlace | null) => void; beach: boolean }) {
+function PlacePicker({ current, spotName, onChoose, beach, variant = "dark" }: { current: string; spotName: string; onChoose: (p: WxPlace | null) => void; beach: boolean; variant?: "dark" | "scene" }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
   const [q, setQ] = useState("");
@@ -520,7 +520,11 @@ function PlacePicker({ current, spotName, onChoose, beach }: { current: string; 
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-label={`מיקום מזג האוויר: ${current}. לחץ לשינוי`}
-        className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/25 bg-white/10 px-2 py-0.5 text-[14px] font-semibold text-white"
+        className={
+          variant === "scene"
+            ? "inline-flex shrink-0 items-center gap-1 rounded-full border border-white/30 bg-black/20 px-2.5 py-0.5 text-[14px] font-bold text-white backdrop-blur-sm"
+            : "inline-flex shrink-0 items-center gap-1 rounded-full border border-white/25 bg-white/10 px-2 py-0.5 text-[14px] font-semibold text-white"
+        }
       >
         <I d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10zM12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" className="h-4 w-4 text-gold" />
         {current}
@@ -847,16 +851,15 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
 
   return (
     <div aria-busy={busy}>
-      {/* מיקום — קובע את "עכשיו בחוץ", "השבוע במבט אחד" וגרף מזג האוויר. נתוני הים תמיד מהחוף שנבחר */}
-      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-2xl bg-navy px-3 py-2 text-white">
-        <span className="text-[13px] font-semibold text-white/70">מיקום:</span>
-        <PlacePicker current={wx.place?.name ?? s.spot} spotName={s.spot} onChoose={wx.choose} beach={!wx.place} />
-        <span className="text-[12px] text-white/60">{wx.place ? "עיר — בלי נתוני ים" : "חוף — כולל ים"}</span>
-      </div>
-
       <DeckTitle>עכשיו בחוץ</DeckTitle>
       <div className={`transition-opacity ${wx.busy ? "opacity-60" : ""}`}>
-        <NowCard hours={wx.hours} now={now} coastal={!wx.place} place={wx.place?.name ?? s.spot} />
+        {/* המיקום בראש הסיכום — קובע את "עכשיו בחוץ", "השבוע במבט אחד" וגרף מזג האוויר. נתוני הים תמיד מהחוף שנבחר */}
+        <NowCard
+          hours={wx.hours}
+          now={now}
+          coastal={!wx.place}
+          picker={<PlacePicker current={wx.place?.name ?? s.spot} spotName={s.spot} onChoose={wx.choose} beach={!wx.place} variant="scene" />}
+        />
       </div>
 
       <DeckTitle className="mt-6">השבוע במבט אחד <span className="text-[12.5px] font-semibold text-muted">בוקר · צהריים · ערב</span></DeckTitle>
