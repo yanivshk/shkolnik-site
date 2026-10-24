@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 export const MENU = [
   { href: "/hebrew-calendar", label: "לוח שנה עברי" },
   { href: "/sea", label: "ים, רוח, גלים" },
+  { href: "/sports-tables", label: "טבלאות ספורט" },
   { href: "/ai-tools", label: "כלי AI" },
   { href: "/support-tools", label: "כלי תמיכה" },
   { href: "/articles", label: "מאמרים" },
