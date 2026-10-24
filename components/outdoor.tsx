@@ -114,7 +114,7 @@ function Gauge({ label, value, word, pct, color, sub }: { label: string; value: 
 
 const FEEL_COLOR: Record<Feel, string> = { cold: "#93c5fd", cool: "#7dd3fc", pleasant: "#4ade80", warm: "#fde047", hot: "#fb923c", scorching: "#f87171" };
 
-export function NowCard({ hours, now, coastal, place }: { hours: SurfHour[]; now: number; coastal: boolean; place: string }) {
+export function NowCard({ hours, now, coastal, picker }: { hours: SurfHour[]; now: number; coastal: boolean; picker: React.ReactNode }) {
   const h = hours[now];
   const o = h ? toOut(h, coastal) : null;
 
@@ -141,9 +141,14 @@ export function NowCard({ hours, now, coastal, place }: { hours: SurfHour[]; now
   return (
     <section aria-label="עכשיו בחוץ" className="overflow-hidden rounded-[22px] border border-white/15 bg-[#0d2152] text-white shadow-[0_18px_40px_-20px_rgba(0,0,0,0.6)]">
       <div className="px-3.5 pb-3.5 pt-3" style={{ background: SCENE[isNight ? "night" : s.key] }}>
-        <span className="inline-flex items-center gap-1 rounded-full bg-black/20 px-2.5 py-0.5 text-[13px] font-bold">
-          {place} · עכשיו <span dir="ltr" className="tabular">{hh(h.time)}:00</span>
-        </span>
+        {/* מיקום (לחיצה לשינוי) + השעה, וסוג המיקום */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {picker}
+          <span className="inline-flex items-center gap-1 rounded-full bg-black/20 px-2.5 py-0.5 text-[13px] font-bold">
+            עכשיו <span dir="ltr" className="tabular">{hh(h.time)}:00</span>
+          </span>
+          <span className="ms-auto text-[12px] font-semibold text-white/80">{coastal ? "חוף · כולל ים" : "עיר · בלי ים"}</span>
+        </div>
         <div className="mt-2.5 flex items-center gap-3">
           <SkyIcon k={icon} size={64} />
           <div>
