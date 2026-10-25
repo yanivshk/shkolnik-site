@@ -582,12 +582,12 @@ function PlacePicker({ current, spotName, onChoose, beach, variant = "dark" }: {
 /** אריח מזג האוויר בדף הים — בחירת עיר, נתוני השעה הנבחרת + הגרף */
 function WeatherDeck({ wx, s, now, sel, onSel, label }: { wx: ReturnType<typeof useWxPlace>; s: Surf; now: number; sel: number; onSel: (i: number) => void; label: string }) {
   const h = wx.hours[sel];
-  const name = wx.place?.name ?? s.spot;
+  const name = wx.place?.name ?? spotLabel(s.spot);
   return (
     <section aria-label={`מזג האוויר ב${name}`} className={`relative overflow-hidden rounded-2xl border border-white/15 bg-[#0d2152] p-3 text-white shadow-[0_18px_40px_-20px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] transition-opacity sm:p-4 ${wx.busy ? "opacity-60" : ""}`} aria-busy={wx.busy}>
       <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-[#c07f00] to-transparent" />
       <div className="flex items-center justify-between gap-2">
-        <PlacePicker current={name} spotName={s.spot} onChoose={wx.choose} beach={!wx.place} />
+        <PlacePicker current={wx.place?.name ?? spotLabel(s.spot)} spotName={spotLabel(s.spot)} onChoose={wx.choose} beach={!wx.place} />
         <span className="text-[12px] font-semibold text-white/75">{label}</span>
       </div>
 
@@ -805,6 +805,61 @@ const dayKey = (t: string) => t.slice(0, 10);
 const dateShort = (t: string) => `${t.slice(8, 10)}.${t.slice(5, 7)}`;
 
 /** אריח הים המלא: נתוני השעה הנבחרת + גרף רציף לכל הימים, עם גרירה, קפיצה ליום, וטבלת סיכום יומית */
+/** ערי הסרגל התחתון. עיר עם חוף — עוברת לחוף (כולל נתוני ים); ירושלים — מזג אוויר בלבד */
+const BAR_CITIES: { name: string; spot?: number; place?: WxPlace }[] = [
+  { name: "תל אביב", spot: 60 },
+  { name: "בת ים", spot: 61 },
+  { name: "אשדוד", spot: 70 },
+  { name: "חיפה", spot: 30 },
+  { name: "ירושלים", place: { name: "ירושלים", lat: 31.7683, lon: 35.2137 } },
+];
+const CITY_ICON = "M3 21h18M5 21V10l4-3 4 3v11M13 21V6l3-3 3 3v15M8 13h2M8 17h2M15.5 9h1M15.5 13h1M15.5 17h1";
+
+/** שם החוף לתצוגה ("חיפה-מערב" → "חיפה") */
+const spotLabel = (name: string) => name.replace(/-מערב$/, "");
+
+/**
+ * סרגל ערים קבוע בתחתית המסך — באותה שפה של הסרגל בעמוד הבית ובטבלאות הספורט.
+ * לחיצה מעדכנת את כל הדף: הסיכום, הקוביות, הגרפים, המכ"ם וכפתור בחירת המיקום.
+ */
+function CityBar({ spotId, place, onSpot, onPlace }: { spotId: number; place: WxPlace | null; onSpot: (id: number) => void; onPlace: (p: WxPlace | null) => void }) {
+  const [pending, setPending] = useState<string | null>(null);
+  const activeName = BAR_CITIES.find((c) => (c.spot != null ? !place && c.spot === spotId : place?.name === c.name))?.name;
+  useEffect(() => { if (pending && pending === activeName) setPending(null); }, [pending, activeName]);
+  const shown = pending ?? activeName;
+  return (
+    <div className="fixed inset-x-3 z-50 mx-auto max-w-md" style={{ bottom: "calc(10px + var(--safe-bottom))" }}>
+      <nav
+        aria-label="בחירת עיר"
+        className="glass-strong isolate w-full rounded-[26px] border-2 border-gold/80 !bg-white/95 px-1.5 py-1.5 shadow-[0_22px_50px_-14px_rgba(19,48,110,0.55),0_0_0_4px_rgba(255,210,63,0.18)]"
+      >
+        <ul className="flex items-stretch justify-between gap-0.5">
+          {BAR_CITIES.map((c) => {
+            const on = shown === c.name;
+            return (
+              <li key={c.name} className="flex-1">
+                <button
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => {
+                    setPending(c.name);
+                    if (c.spot != null) { onPlace(null); onSpot(c.spot); } else if (c.place) onPlace(c.place);
+                  }}
+                  className={`relative flex w-full flex-col items-center gap-0.5 rounded-2xl py-2 text-[12px] transition-colors ${on ? "font-extrabold text-navy" : "font-semibold text-royal"}`}
+                >
+                  {on && <span className="absolute inset-0 -z-10 rounded-2xl bg-gold/80 shadow-[inset_0_0_0_1px_rgba(255,210,63,1)]" />}
+                  <I d={c.spot != null ? WAVE_ICON : CITY_ICON} className="h-5 w-5" />
+                  <span className="whitespace-nowrap">{c.name}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </div>
+  );
+}
+
 export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: number }) {
   const { s, busy, choose, now } = useSurf(initial, days);
   const wx = useWxPlace(s?.hours ?? []);
@@ -858,7 +913,7 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
           hours={wx.hours}
           now={now}
           coastal={!wx.place}
-          picker={<PlacePicker current={wx.place?.name ?? s.spot} spotName={s.spot} onChoose={wx.choose} beach={!wx.place} variant="scene" />}
+          picker={<PlacePicker current={wx.place?.name ?? spotLabel(s.spot)} spotName={spotLabel(s.spot)} onChoose={wx.choose} beach={!wx.place} variant="scene" />}
         />
       </div>
 
@@ -1026,6 +1081,9 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
           גלים: טווח הגובה ביום · סוול: המחזור הארוך ביותר · עוצמה: kW למטר חוף בשיא · רוח: מקסימום (משבים). נתונים: Open-Meteo, מתעדכנים כל חצי שעה.
         </p>
       </div>
+      {/* מקום לסרגל הקבוע */}
+      <div className="h-20" aria-hidden />
+      <CityBar spotId={s.spotId} place={wx.place} onSpot={choose} onPlace={wx.choose} />
     </div>
   );
 }
