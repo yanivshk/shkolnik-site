@@ -10,14 +10,13 @@ import { RealBasketball, RealSoccerBall } from "@/components/maccabi";
  */
 
 const isMaccabi = (name: string) => /^מכבי (תל אביב|ת"א)/.test(name);
-const FORM: Record<number, { c: string; t: string }> = { 1: { c: "#16a34a", t: "נ" }, 2: { c: "#94a3b8", t: "ת" }, 0: { c: "#e11d48", t: "ה" } };
 const hm = (iso: string) => new Intl.DateTimeFormat("he-IL", { timeZone: "Asia/Jerusalem", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(iso));
 
 function LiveDot() {
   return <span className="live-dot inline-block h-2 w-2 shrink-0 rounded-full bg-down" aria-hidden />;
 }
 
-function TeamCell({ r, kind }: { r: Row; kind: Table["kind"] }) {
+function TeamCell({ r }: { r: Row }) {
   return (
     <div className="flex min-w-0 items-center gap-1.5">
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -35,13 +34,6 @@ function TeamCell({ r, kind }: { r: Row; kind: Table["kind"] }) {
               {r.live.clock && <span dir="ltr" className="tabular font-bold opacity-90">{r.live.clock}</span>}
             </span>
             <span className="truncate font-semibold text-muted">מול {r.live.opponent}</span>
-          </div>
-        ) : r.form.length > 0 && kind !== "winner" ? (
-          // 5 התוצאות האחרונות — האחרונה מימין
-          <div className="mt-0.5 flex gap-[3px]" aria-label={`תוצאות אחרונות: ${r.form.map((f) => FORM[f]?.t ?? "").join(" ")}`}>
-            {r.form.map((f, i) => (
-              <span key={i} className="grid h-[13px] w-[13px] place-items-center rounded-[3px] text-[8.5px] font-extrabold leading-none text-white" style={{ background: FORM[f]?.c ?? "#cbd5e1" }}>{FORM[f]?.t}</span>
-            ))}
           </div>
         ) : null}
       </div>
@@ -104,7 +96,7 @@ function LeagueTable({ t }: { t: Table }) {
                   style={{ boxShadow: destColor(r.dest) ? `inset -3px 0 0 ${destColor(r.dest)}` : undefined }}
                 >
                   <td className="py-2 text-center text-[13px] font-bold text-muted">{r.pos}</td>
-                  <td className="py-2 pe-1"><TeamCell r={r} kind={t.kind} /></td>
+                  <td className="py-2 pe-1"><TeamCell r={r} /></td>
                   {cells.map((c, i) => {
                     const isPts = head[i] === "נק׳";
                     const isDiff = head[i] === "הפרש";
@@ -128,7 +120,6 @@ function LeagueTable({ t }: { t: Table }) {
               {t.destinations.map((d) => (
                 <span key={d.num} className="inline-flex items-center gap-1"><span className="h-3 w-[3px] rounded-full" style={{ background: d.color }} />{d.name}</span>
               ))}
-              {t.kind !== "winner" && <span className="inline-flex items-center gap-1">תוצאות אחרונות: <b className="text-up">נ</b> ניצחון · <b className="text-slate-400">ת</b> תיקו · <b className="text-down">ה</b> הפסד</span>}
             </div>
           )}
           {t.notes.map((n) => <p key={n}>⚠️ {n}</p>)}
