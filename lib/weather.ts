@@ -1,3 +1,4 @@
+import { validateWeatherHours } from "./surf-validate";
 /** מזג אוויר מ-Open-Meteo (ללא מפתח). משותף לדף הבית ול-API. */
 
 export type Weather = {
@@ -113,11 +114,12 @@ export async function getHourly(lat: number, lon: number): Promise<HourlyWeather
     const h = ((await res.json()) as Hourly).hourly;
     if (!h) return null;
     const v = (a: (number | null)[] | undefined, i: number) => (typeof a?.[i] === "number" ? (a[i] as number) : undefined);
-    return h.time.map((time, i) => ({
+    // אימות לפני שליחה (ושוב בדפדפן לפני הצגה)
+    return validateWeatherHours<HourlyWeather>(h.time.map((time, i) => ({
       time, temp: v(h.temperature_2m, i), humidity: v(h.relative_humidity_2m, i), rain: v(h.precipitation_probability, i),
       feel: v(h.apparent_temperature, i), code: v(h.weather_code, i), cloud: v(h.cloud_cover, i), vis: v(h.visibility, i), uv: v(h.uv_index, i),
       wind: v(h.wind_speed_10m, i), windDir: v(h.wind_direction_10m, i), gust: v(h.wind_gusts_10m, i),
-    }));
+    })));
   } catch {
     return null;
   }

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { RainRadar } from "@/components/radar";
 import { NowCard, WeekGrid } from "@/components/outdoor";
 import type { HourlyWeather } from "@/lib/weather";
+import { isFresh, validateSurf, validateWeatherHours } from "@/lib/surf-validate";
 import { DEFAULT_SPOT_ID, SURF_SPOTS, dirFull, dirShort, spotById, waveLabel, wavePower, type Surf, type SurfHour } from "@/lib/surf-spots";
 
 const STORE_KEY = "surf-spot";
@@ -408,47 +409,57 @@ function saveWxPlace(p: WxPlace | null) {
  */
 function useWxPlace(hours: SurfHour[]) {
   const [place, setPlace] = useState<WxPlace | null>(null);
-  const [data, setData] = useState<Map<string, HourlyWeather> | null>(null);
+  // הנתונים שמורים יחד עם המיקום שלהם — כך אי אפשר להציג נתונים של עיר אחת תחת שם של אחרת
+  const [wx, setWx] = useState<{ key: string; map: Map<string, HourlyWeather> } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const seq = useRef(0);
+  const placeRef = useRef<WxPlace | null>(null);
 
   const load = useCallback(async (p: WxPlace | null) => {
-    if (!p) { setData(null); return; }
+    const my = ++seq.current;
+    setFailed(false);
+    if (!p) { setBusy(false); return; }
     setBusy(true);
     try {
       const r = await fetch(`/api/forecast?lat=${p.lat}&lon=${p.lon}`);
-      if (r.ok) {
-        const list = (await r.json()) as HourlyWeather[];
-        setData(new Map(list.map((x) => [x.time, x])));
-      }
-    } catch { /* keep last */ }
-    setBusy(false);
+      const list = r.ok ? validateWeatherHours<HourlyWeather>(await r.json()) : null; // אימות שני — בדפדפן
+      if (my !== seq.current) return; // הגיעה בינתיים בחירה חדשה
+      if (list) setWx({ key: placeKey(p), map: new Map(list.map((x) => [x.time, x])) });
+      else setFailed(true);
+    } catch {
+      if (my === seq.current) setFailed(true);
+    } finally {
+      if (my === seq.current) setBusy(false);
+    }
   }, []);
 
   useEffect(() => {
-    const saved = readWxPlace();
-    if (saved) { setPlace(saved); load(saved); }
-    const id = setInterval(() => { const p = readWxPlace(); if (p) load(p); }, REFRESH_MS);
+    const id = setInterval(() => { if (placeRef.current) load(placeRef.current); }, REFRESH_MS);
     return () => clearInterval(id);
   }, [load]);
 
-  const choose = (p: WxPlace | null) => { setPlace(p); saveWxPlace(p); load(p); };
+  const choose = useCallback((p: WxPlace | null) => { placeRef.current = p; setPlace(p); saveWxPlace(p); load(p); }, [load]);
+  const ready = !!place && wx?.key === placeKey(place);
   const merged = useMemo(
     () =>
-      place && data
+      place
         ? hours.map((h) => {
-            // בעיר שנבחרה: כל נתוני מזג האוויר מהעיר; נתוני הים (גלים) נשארים של החוף ולא מוצגים
-            const d = data.get(h.time);
+            // עיר בלי ים: כל נתוני מזג האוויר מהעיר (וכל עוד לא נטענו — ריקים, לא של מקום אחר)
+            const d = ready ? wx!.map.get(h.time) : undefined;
             return {
               ...h,
               temp: d?.temp, humidity: d?.humidity, rain: d?.rain, feel: d?.feel, code: d?.code, cloud: d?.cloud, vis: d?.vis, uv: d?.uv,
-              wind: d?.wind ?? h.wind, windDir: d?.windDir ?? h.windDir, gust: d?.gust,
+              wind: d?.wind ?? 0, windDir: d?.windDir ?? 0, gust: d?.gust,
             };
           })
         : hours,
-    [hours, place, data],
+    [hours, place, wx, ready],
   );
-  return { place, choose, hours: merged, busy };
+  return { place, choose, hours: merged, busy, failed, ready: !place || ready };
 }
+
+const placeKey = (p: WxPlace) => `${p.name}|${p.lat.toFixed(3)}|${p.lon.toFixed(3)}`;
 
 /** ערים קבועות לבחירה מהירה */
 const PRESET_CITIES: WxPlace[] = [
@@ -580,14 +591,14 @@ function PlacePicker({ current, spotName, onChoose, beach, variant = "dark" }: {
 }
 
 /** אריח מזג האוויר בדף הים — בחירת עיר, נתוני השעה הנבחרת + הגרף */
-function WeatherDeck({ wx, s, now, sel, onSel, label }: { wx: ReturnType<typeof useWxPlace>; s: Surf; now: number; sel: number; onSel: (i: number) => void; label: string }) {
+function WeatherDeck({ wx, s, now, sel, onSel, label, onSelect }: { wx: ReturnType<typeof useWxPlace>; s: Surf; now: number; sel: number; onSel: (i: number) => void; label: string; onSelect: (p: WxPlace | null) => void }) {
   const h = wx.hours[sel];
   const name = wx.place?.name ?? spotLabel(s.spot);
   return (
     <section aria-label={`מזג האוויר ב${name}`} className={`relative overflow-hidden rounded-2xl border border-white/15 bg-[#0d2152] p-3 text-white shadow-[0_18px_40px_-20px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] transition-opacity sm:p-4 ${wx.busy ? "opacity-60" : ""}`} aria-busy={wx.busy}>
       <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-[#c07f00] to-transparent" />
       <div className="flex items-center justify-between gap-2">
-        <PlacePicker current={wx.place?.name ?? spotLabel(s.spot)} spotName={spotLabel(s.spot)} onChoose={wx.choose} beach={!wx.place} />
+        <PlacePicker current={wx.place?.name ?? spotLabel(s.spot)} spotName={spotLabel(s.spot)} onChoose={onSelect} beach={!wx.place} />
         <span className="text-[12px] font-semibold text-white/75">{label}</span>
       </div>
 
@@ -626,31 +637,86 @@ function DeckTitle({ children, className = "" }: { children: React.ReactNode; cl
 /* ---------------- משותף: נתונים + בחירת חוף ---------------- */
 
 /** טוען את תחזית הים לחוף שנבחר (נשמר בדפדפן ומשותף לעמוד הבית ולדף הים), מרענן כל חצי שעה */
-function useSurf(initial: Surf | null, days: number) {
-  const [s, setS] = useState<Surf | null>(initial);
-  const [busy, setBusy] = useState(false);
-  const spotRef = useRef<number>(initial?.spotId ?? DEFAULT_SPOT_ID);
+type SeaLoc = { name: string; lat: number; lon: number };
+const COAST_KEY = "sea-coast";
+function readCoast(): SeaLoc | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(COAST_KEY) ?? "null");
+    return v && typeof v.name === "string" && typeof v.lat === "number" && typeof v.lon === "number" ? v : null;
+  } catch {
+    return null;
+  }
+}
+function saveCoast(v: SeaLoc | null) {
+  try { if (v) localStorage.setItem(COAST_KEY, JSON.stringify(v)); else localStorage.removeItem(COAST_KEY); } catch { /* ignore */ }
+}
 
-  const load = useCallback(async (id: number) => {
+type LoadResult = "ok" | "no-sea" | "error" | "stale";
+
+/**
+ * טוען את תחזית הים לחוף שנבחר (או לכל עיר חוף לפי קואורדינטות), מרענן כל חצי שעה.
+ * כל תשובה עוברת אימות בדפדפן לפני ההצגה (מבנה, מיקום נכון, ערכים בטווח, עדכניות),
+ * ותשובה ישנה של בחירה קודמת לא יכולה לדרוס בחירה חדשה.
+ */
+function useSurf(initial: Surf | null, days: number) {
+  const [s, setS] = useState<Surf | null>(() => (initial ? validateSurf(initial).surf : null));
+  const [busy, setBusy] = useState(false);
+  const locRef = useRef<{ spot: number } | SeaLoc>({ spot: initial?.spotId && initial.spotId > 0 ? initial.spotId : DEFAULT_SPOT_ID });
+  const seq = useRef(0);
+
+  const load = useCallback(async (loc: { spot: number } | SeaLoc, retry = true): Promise<LoadResult> => {
+    const my = ++seq.current;
+    const base = "spot" in loc
+      ? `/api/surf?spot=${loc.spot}&days=${days}`
+      : `/api/surf?lat=${loc.lat}&lon=${loc.lon}&name=${encodeURIComponent(loc.name)}&days=${days}`;
     try {
-      const r = await fetch(`/api/surf?spot=${id}&days=${days}`);
-      if (r.ok) setS(await r.json());
-    } catch { /* keep last */ }
+      const r = await fetch(retry ? base : `${base}&fresh=${Date.now()}`);
+      if (my !== seq.current) return "stale";
+      if (r.status === 404) return "no-sea";
+      if (!r.ok) return "error";
+      const expect = "spot" in loc ? spotById(loc.spot)?.name : loc.name;
+      const v = validateSurf(await r.json(), { name: expect });
+      if (my !== seq.current) return "stale";
+      if (!v.ok || !v.surf) { console.warn("[surf] נתונים נדחו:", v.issues); return "error"; }
+      // נתונים ישנים מהקאש — מבקשים פעם אחת עותק טרי
+      if (!isFresh(v.surf, hourKey()) && retry) return load(loc, false);
+      setS(v.surf);
+      return "ok";
+    } catch {
+      return my === seq.current ? "error" : "stale";
+    }
   }, [days]);
 
   useEffect(() => {
+    // בדף הים: חוף לפי קואורדינטות (עיר) גובר על חוף מהרשימה
+    const coast = days > 1 ? readCoast() : null;
     const saved = readSpot();
-    if (saved && saved !== spotRef.current) { spotRef.current = saved; load(saved); }
-    const id = setInterval(() => load(spotRef.current), REFRESH_MS);
+    if (coast) { locRef.current = coast; load(coast); }
+    else if (saved && saved !== (locRef.current as { spot?: number }).spot) { locRef.current = { spot: saved }; load(locRef.current); }
+    const id = setInterval(() => load(locRef.current), REFRESH_MS);
     return () => clearInterval(id);
-  }, [load]);
+  }, [load, days]);
 
   const choose = useCallback(async (id: number) => {
-    spotRef.current = id;
+    locRef.current = { spot: id };
     saveSpot(id);
+    saveCoast(null);
     setBusy(true);
-    await load(id);
-    setBusy(false);
+    const res = await load(locRef.current);
+    if (res !== "stale") setBusy(false);
+    return res;
+  }, [load]);
+
+  /** עיר לפי קואורדינטות: "no-sea" כשאין ים בנקודה (ואז לא משתנה כלום) */
+  const chooseAt = useCallback(async (loc: SeaLoc) => {
+    const prev = locRef.current;
+    locRef.current = loc;
+    setBusy(true);
+    const res = await load(loc);
+    if (res === "ok") saveCoast(loc);
+    else if (res !== "stale") locRef.current = prev;
+    if (res !== "stale") setBusy(false);
+    return res;
   }, [load]);
 
   // השעה הנוכחית מתעדכנת גם בלי רענון נתונים
@@ -664,7 +730,7 @@ function useSurf(initial: Surf | null, days: number) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s, clock]);
 
-  return { s, busy, choose, now };
+  return { s, busy, choose, chooseAt, now };
 }
 
 /** כפתור בחירת חוף + חלונית (portal, כדי שלא תיחתך בתוך האזור הכחול) */
@@ -822,11 +888,10 @@ const spotLabel = (name: string) => name.replace(/-מערב$/, "");
  * סרגל ערים קבוע בתחתית המסך — באותה שפה של הסרגל בעמוד הבית ובטבלאות הספורט.
  * לחיצה מעדכנת את כל הדף: הסיכום, הקוביות, הגרפים, המכ"ם וכפתור בחירת המיקום.
  */
-function CityBar({ spotId, place, onSpot, onPlace }: { spotId: number; place: WxPlace | null; onSpot: (id: number) => void; onPlace: (p: WxPlace | null) => void }) {
+function CityBar({ current, onSelect }: { current: string; onSelect: (c: (typeof BAR_CITIES)[number]) => void }) {
   const [pending, setPending] = useState<string | null>(null);
-  const activeName = BAR_CITIES.find((c) => (c.spot != null ? !place && c.spot === spotId : place?.name === c.name))?.name;
-  useEffect(() => { if (pending && pending === activeName) setPending(null); }, [pending, activeName]);
-  const shown = pending ?? activeName;
+  useEffect(() => { if (pending && pending === current) setPending(null); }, [pending, current]);
+  const shown = pending ?? current;
   return (
     <div className="fixed inset-x-3 z-50 mx-auto max-w-md" style={{ bottom: "calc(10px + var(--safe-bottom))" }}>
       <nav
@@ -841,10 +906,7 @@ function CityBar({ spotId, place, onSpot, onPlace }: { spotId: number; place: Wx
                 <button
                   type="button"
                   aria-pressed={on}
-                  onClick={() => {
-                    setPending(c.name);
-                    if (c.spot != null) { onPlace(null); onSpot(c.spot); } else if (c.place) onPlace(c.place);
-                  }}
+                  onClick={() => { setPending(c.name); onSelect(c); }}
                   className={`relative flex w-full flex-col items-center gap-0.5 rounded-2xl py-2 text-[12px] transition-colors ${on ? "font-extrabold text-navy" : "font-semibold text-royal"}`}
                 >
                   {on && <span className="absolute inset-0 -z-10 rounded-2xl bg-gold/80 shadow-[inset_0_0_0_1px_rgba(255,210,63,1)]" />}
@@ -861,8 +923,33 @@ function CityBar({ spotId, place, onSpot, onPlace }: { spotId: number; place: Wx
 }
 
 export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: number }) {
-  const { s, busy, choose, now } = useSurf(initial, days);
+  const { s, busy, choose, chooseAt, now } = useSurf(initial, days);
   const wx = useWxPlace(s?.hours ?? []);
+  const [selError, setSelError] = useState<string | null>(null);
+  const coastRef = useRef<WxPlace | null>(null);
+
+  /**
+   * בחירת מיקום אחת לכל הדף (סרגל למטה, כפתור המיקום, ערים קבועות וחיפוש):
+   * עיר עם ים → כל הדף עובר אליה (כולל גלים); עיר בלי ים → מזג אוויר בלבד, והחלק של הים מוסתר.
+   * בחירה חדשה מבטלת תשובה של בחירה קודמת שעוד לא הגיעה.
+   */
+  const select = useCallback(async (p: WxPlace | null) => {
+    setSelError(null);
+    if (!p) { wx.choose(null); return; }
+    const bar = BAR_CITIES.find((c) => c.spot != null && c.name === p.name);
+    const res = bar ? await choose(bar.spot!) : await chooseAt({ name: p.name, lat: p.lat, lon: p.lon });
+    if (res === "stale") return;
+    if (res === "ok") { coastRef.current = bar ? null : p; wx.choose(null); }
+    else if (res === "no-sea") wx.choose(p);
+    else setSelError(`לא הצלחנו לטעון את התחזית ל${p.name} — הנתונים בדף לא הוחלפו. נסו שוב בעוד רגע.`);
+  }, [choose, chooseAt, wx]);
+
+  // מיקום שנשמר בכניסה הקודמת (עיר) — נבחר מחדש באותו מסלול, כולל בדיקת ים
+  useEffect(() => {
+    const saved = readWxPlace();
+    if (saved) select(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [picked, setPicked] = useState<number | null>(null);
   useEffect(() => setPicked(null), [s?.spotId]);
 
@@ -905,15 +992,21 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
   const slot = SLOTS.find((x) => x.hh === hh(h.time));
 
   return (
-    <div aria-busy={busy}>
+    <div aria-busy={busy || wx.busy}>
       <DeckTitle>עכשיו בחוץ</DeckTitle>
+      {selError && <p role="alert" className="mb-2 rounded-xl bg-down/10 px-3 py-2 text-[13px] font-semibold text-down">{selError}</p>}
+      {wx.place && !wx.ready && (
+        <p role="status" className="mb-2 rounded-xl bg-royal/[0.07] px-3 py-2 text-[13px] font-semibold text-royal">
+          {wx.failed ? `לא הצלחנו לטעון את מזג האוויר ב${wx.place.name}. נסו שוב בעוד רגע.` : `טוען את התחזית ל${wx.place.name}…`}
+        </p>
+      )}
       <div className={`transition-opacity ${wx.busy ? "opacity-60" : ""}`}>
         {/* המיקום בראש הסיכום — קובע את "עכשיו בחוץ", "השבוע במבט אחד" וגרף מזג האוויר. נתוני הים תמיד מהחוף שנבחר */}
         <NowCard
           hours={wx.hours}
           now={now}
           coastal={!wx.place}
-          picker={<PlacePicker current={wx.place?.name ?? spotLabel(s.spot)} spotName={spotLabel(s.spot)} onChoose={wx.choose} beach={!wx.place} variant="scene" />}
+          picker={<PlacePicker current={wx.place?.name ?? spotLabel(s.spot)} spotName={spotLabel(s.spot)} onChoose={select} beach={!wx.place} variant="scene" />}
         />
       </div>
 
@@ -922,9 +1015,15 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
         <WeekGrid hours={wx.hours} now={now} sel={sel} coastal={!wx.place} onSel={go} />
       </div>
 
+      {wx.place ? (
+        // עיר בלי ים — לא מציגים נתוני ים של מקום אחר
+        <div className="mt-6 rounded-2xl border border-royal/15 bg-white/80 p-4 text-[14px] text-ink shadow-[0_10px_30px_-18px_rgba(19,48,110,.35)]">
+          <b className="text-navy">ב{wx.place.name} אין ים</b> — הדף מציג את מזג האוויר ב{wx.place.name}. לתחזית גלים בחרו עיר חוף בסרגל למטה.
+        </div>
+      ) : (<>
       <DeckTitle className="mt-6">תחזית ים, גלים ורוח</DeckTitle>
       <section
-        aria-label={`מצב הים ב${s.spot}`}
+        aria-label={`מצב הים ב${spotLabel(s.spot)}`}
         className={`relative overflow-hidden rounded-2xl border border-white/15 bg-[#0d2152] p-3 text-white shadow-[0_18px_40px_-20px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] transition-opacity sm:p-4 ${busy ? "opacity-60" : ""}`}
       >
         <span className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-[#1e96cf] to-transparent" />
@@ -1021,16 +1120,18 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
           </div>
         </div>
       </section>
+      </>)}
 
       {/* מזג אוויר — אותו סמן כמו בגרף הים: הזזה באחד מזיזה גם את השני */}
       <DeckTitle className="mt-6">תחזית מזג אוויר</DeckTitle>
-      <WeatherDeck wx={wx} s={s} now={now} sel={sel} onSel={go} label={isNow ? "עכשיו" : `${dayLabel(h.time, today)}${slot ? ` · ${slot.label}` : ""} ${hh(h.time)}:00`} />
+      <WeatherDeck wx={wx} s={s} now={now} sel={sel} onSel={go} onSelect={select} label={isNow ? "עכשיו" : `${dayLabel(h.time, today)}${slot ? ` · ${slot.label}` : ""} ${hh(h.time)}:00`} />
 
       {/* מכ"ם גשם — השעתיים האחרונות, עם סימון המיקום שנבחר */}
       <DeckTitle className="mt-6">מכ״ם גשם</DeckTitle>
-      <RainRadar marker={wx.place ?? (spotById(s.spotId) ? { name: s.spot, lat: spotById(s.spotId)!.lat, lon: spotById(s.spotId)!.lon } : undefined)} />
+      <RainRadar marker={wx.place ?? (spotById(s.spotId) ? { name: spotLabel(s.spot), lat: spotById(s.spotId)!.lat, lon: spotById(s.spotId)!.lon } : coastRef.current ?? undefined)} />
 
-      {/* סיכום יומי — לחיצה על יום מזיזה את הקו אליו */}
+      {/* סיכום יומי — לחיצה על יום מזיזה את הקו אליו (נתוני ים — רק במיקום עם ים) */}
+      {!wx.place && (
       <div className="glass mt-4 overflow-hidden rounded-[var(--radius-card)]">
         <h2 className="border-b border-line/70 px-3 py-2.5 text-[15px] font-extrabold">תחזית לפי ימים</h2>
         <table className="w-full text-[13px]">
@@ -1081,9 +1182,10 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
           גלים: טווח הגובה ביום · סוול: המחזור הארוך ביותר · עוצמה: kW למטר חוף בשיא · רוח: מקסימום (משבים). נתונים: Open-Meteo, מתעדכנים כל חצי שעה.
         </p>
       </div>
+      )}
       {/* מקום לסרגל הקבוע */}
       <div className="h-20" aria-hidden />
-      <CityBar spotId={s.spotId} place={wx.place} onSpot={choose} onPlace={wx.choose} />
+      <CityBar current={wx.place?.name ?? spotLabel(s.spot)} onSelect={(c) => select(c.place ?? { name: c.name, lat: spotById(c.spot!)!.lat, lon: spotById(c.spot!)!.lon })} />
     </div>
   );
 }

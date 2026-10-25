@@ -1,6 +1,7 @@
 import "server-only";
 import { REVALIDATE, TZ } from "./config";
 import { DEFAULT_SPOT_ID, spotById, type Surf, type SurfHour } from "./surf-spots";
+import { validateSurf } from "./surf-validate";
 
 /**
  * גלישה — תחזית ים לשעה-שעה: Open-Meteo Marine (גלים, סוול, מים, גאות) + Open-Meteo Forecast (רוח, טמפרטורה, לחות, גשם). ללא מפתח.
@@ -14,6 +15,8 @@ export const MAX_SURF_DAYS = 7;
 
 type Series = (number | null)[];
 type Marine = {
+  latitude?: number;
+  longitude?: number;
   hourly?: {
     time: string[];
     wave_height: Series; wave_period: Series;
@@ -40,6 +43,13 @@ async function get<T>(url: string): Promise<T | null> {
 
 const num = (v: number | null | undefined) => (typeof v === "number" ? v : undefined);
 
+/** מרחק בק"מ בין שתי נקודות */
+function km(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const r = Math.PI / 180;
+  const a = Math.sin(((lat2 - lat1) * r) / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(((lon2 - lon1) * r) / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(a));
+}
+
 /** השעה הנוכחית בשעון ישראל (YYYY-MM-DDTHH) */
 const hourKey = (d = new Date()) =>
   new Intl.DateTimeFormat("sv-SE", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" })
@@ -48,7 +58,26 @@ const hourKey = (d = new Date()) =>
 export async function getSurf(spotId: number = DEFAULT_SPOT_ID, days = 1): Promise<Surf | null> {
   const s = spotById(spotId);
   if (!s) return null;
+  return getSurfAt(s, days);
+}
+
+/**
+ * תחזית ים + מזג אוויר לכל נקודה (חוף מהרשימה או עיר שנבחרה).
+ * המקור מחזיר את תא הים הקרוב לעיר חוף; לעיר בלי ים (ירושלים, אילת — אין מודל למפרץ) — null.
+ * הנתונים עוברים אימות לפני שהם יוצאים מהשרת (אימות שני — בדפדפן, לפני ההצגה).
+ */
+export async function getSurfAt(s: { id: number; name: string; lat: number; lon: number }, days = 1): Promise<Surf | null> {
+  const out = await fetchSurf(s, days);
+  if (!out) return null;
+  const v = validateSurf(out, { name: s.name });
+  if (!v.ok) console.warn(`[surf] נתונים נדחו (${s.name}): ${v.issues.join("; ")}`);
+  return v.surf;
+}
+
+async function fetchSurf(s: { id: number; name: string; lat: number; lon: number }, days: number): Promise<Surf | null> {
   const span = BEFORE + Math.max(1, Math.min(MAX_SURF_DAYS, days)) * 24;
+  // נתוני דמה: נקודה בלי ים (ירושלים, ים המלח, אילת) — כמו במקור האמיתי
+  if (process.env.MOCK_DATA === "1" && (s.lat < 30 || s.lon > 34.7 + (s.lat - 31.6) * 0.27)) return null;
   if (process.env.MOCK_DATA === "1") return mockSurf(s.id, s.name, days > 1 ? span + 23 - Number(hourKey().slice(11, 13)) : span);
 
   const tz = encodeURIComponent(TZ);
@@ -57,6 +86,8 @@ export async function getSurf(spotId: number = DEFAULT_SPOT_ID, days = 1): Promi
     get<Wind>(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,relative_humidity_2m,precipitation_probability,apparent_temperature,weather_code,cloud_cover,visibility,uv_index&wind_speed_unit=kn&past_days=1&forecast_days=${MAX_SURF_DAYS + 1}&timezone=${tz}`),
   ]);
   if (!m?.hourly) return null;
+  // המקור "מצמיד" נקודה לתא הים הקרוב גם כשהיא רחוקה מהחוף (לוד → ים מול יפו). עיר שרחוקה מהים יותר מ-13 ק"מ = בלי ים
+  if (s.id < 0 && m.latitude != null && m.longitude != null && km(s.lat, s.lon, m.latitude, m.longitude) > 13) return null;
   const mh = m.hourly;
   const start = mh.time.findIndex((t) => t.startsWith(hourKey())) - BEFORE;
   if (start < 0) return null;
