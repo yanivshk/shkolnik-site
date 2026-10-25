@@ -51,7 +51,7 @@ function LeagueTable({ t }: { t: Table }) {
   const destColor = (n?: number) => t.destinations.find((d) => d.num === n)?.color;
 
   return (
-    <section id={t.key} aria-labelledby={`${t.key}-t`} className="scroll-mt-20 overflow-hidden rounded-[var(--radius-card)] border border-royal/10 bg-white shadow-[0_14px_40px_-24px_rgba(19,48,110,.45)]">
+    <section id={t.key} aria-labelledby={`${t.key}-t`} className="overflow-hidden rounded-[var(--radius-card)] border border-royal/10 bg-white shadow-[0_14px_40px_-24px_rgba(19,48,110,.45)]">
       {/* כותרת בצבעי מכבי */}
       <div className="relative flex items-center gap-2 bg-gradient-to-l from-navy via-royal to-royal-2 px-3 py-2.5 text-white">
         <div className="maccabi-stripes pointer-events-none absolute inset-0 opacity-40" />
@@ -140,6 +140,16 @@ const ICON = {
  * סרגל קבוע בתחתית המסך — באותה שפה של הסרגל בעמוד הבית: הטבלה שעל המסך מסומנת בצהוב,
  * ונקודה אדומה מסמנת טבלה עם משחק חי.
  */
+/** גלילה לטבלה כך שהכותרת שלה תופיע מיד מתחת לשורת הכותרת הקבועה של הדף */
+function goTo(key: string) {
+  const el = document.getElementById(key);
+  if (!el) return;
+  // המיקום של שורת הכותרת כשהיא כבר "נדבקה" למעלה (גם אם עכשיו אנחנו בראש הדף ועוד לא נדבקה)
+  const bar = document.getElementById("page-title-bar");
+  const offset = bar ? (parseFloat(getComputedStyle(bar).top) || 0) + bar.offsetHeight + 8 : 8;
+  window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - offset), behavior: "smooth" });
+}
+
 function TablesNav({ tables }: { tables: Table[] }) {
   const [active, setActive] = useState(tables[0]?.key ?? "");
   useEffect(() => {
@@ -174,6 +184,7 @@ function TablesNav({ tables }: { tables: Table[] }) {
               <li key={t.key} className="flex-1">
                 <a
                   href={`#${t.key}`}
+                  onClick={(e) => { e.preventDefault(); goTo(t.key); }}
                   aria-current={on ? "true" : undefined}
                   className={`relative flex flex-col items-center gap-0.5 rounded-2xl py-2 text-[12px] transition-colors ${on ? "font-extrabold text-navy" : "font-semibold text-royal"}`}
                 >

@@ -28,10 +28,12 @@ function Icon({ name, className = "h-5 w-5" }: { name: string; className?: strin
 
 /* ---------- מעטפת ---------- */
 
-export function SubPage({ title, subtitle, eyebrow, stats, children, jsonLd, compact = false }: {
+export function SubPage({ title, subtitle, eyebrow, stats, children, jsonLd, compact = false, stickyTitle = false }: {
   title: string; subtitle?: string; eyebrow?: string; stats?: string[]; children: React.ReactNode; jsonLd?: object;
   /** פתיח מינימלי: רק הכותרת, בשורה אחת דקה (דף הים) */
   compact?: boolean;
+  /** פתיח מינימלי שנשאר קבוע בראש המסך בזמן גלילה (טבלאות ספורט) */
+  stickyTitle?: boolean;
 }) {
   return (
     <>
@@ -48,7 +50,11 @@ export function SubPage({ title, subtitle, eyebrow, stats, children, jsonLd, com
       </header>
       <main className="mx-auto max-w-3xl px-4 pb-20 pt-6">
         {compact ? (
-          <div className="relative isolate overflow-hidden rounded-2xl bg-gradient-to-br from-navy via-royal to-royal-2 px-4 py-2.5 text-white shadow-[0_14px_34px_-22px_rgba(19,48,110,0.8)]">
+          <div
+            id="page-title-bar"
+            className={`${stickyTitle ? "sticky z-40 shadow-[0_-20px_0_0_var(--color-night),0_14px_34px_-22px_rgba(19,48,110,0.8)]" : "relative shadow-[0_14px_34px_-22px_rgba(19,48,110,0.8)]"} isolate overflow-hidden rounded-2xl bg-gradient-to-br from-navy via-royal to-royal-2 px-4 py-2.5 text-white`}
+            style={stickyTitle ? { top: "calc(8px + env(safe-area-inset-top, 0px))" } : undefined}
+          >
             <div className="maccabi-stripes absolute inset-0 -z-10" />
             <h1 className="text-[22px] font-black leading-tight">{title}</h1>
             {subtitle && <p className="truncate text-[12.5px] font-medium text-white/80">{subtitle}</p>}

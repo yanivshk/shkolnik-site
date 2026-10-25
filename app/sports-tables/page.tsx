@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 export default async function Page() {
   const data = await getStandings();
   return (
-    <SubPage title="טבלאות ספורט" subtitle="ליגת העל, ווינר סל, יורוליג, לאומית ונוער — חי בזמן משחקים" compact>
+    <SubPage title="טבלאות ספורט" subtitle="ליגת העל, ווינר סל, יורוליג, לאומית ונוער — חי בזמן משחקים" compact stickyTitle>
       <StandingsBoard initial={data} />
     </SubPage>
   );
