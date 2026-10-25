@@ -129,6 +129,72 @@ function LeagueTable({ t }: { t: Table }) {
   );
 }
 
+/** שמות קצרים לסרגל התחתון */
+const SHORT: Record<string, string> = { "ligat-haal": "ליגת העל", winner: "ווינר סל", euroleague: "יורוליג", leumit: "לאומית", youth: "נוער" };
+const ICON = {
+  soccer: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5l3.2 2.3-1.2 3.7h-4l-1.2-3.7zM12 3v4.5M15.2 9.8l4.8-1.3M14 13.5l2.8 4.2M10 13.5l-2.8 4.2M8.8 9.8 4 8.5",
+  basketball: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3v18M5.6 5.6c3.4 3.4 3.4 9.4 0 12.8M18.4 5.6c-3.4 3.4-3.4 9.4 0 12.8",
+};
+
+/**
+ * סרגל קבוע בתחתית המסך — באותה שפה של הסרגל בעמוד הבית: הטבלה שעל המסך מסומנת בצהוב,
+ * ונקודה אדומה מסמנת טבלה עם משחק חי.
+ */
+function TablesNav({ tables }: { tables: Table[] }) {
+  const [active, setActive] = useState(tables[0]?.key ?? "");
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const mid = window.innerHeight * 0.45;
+      let id = tables[0]?.key ?? "";
+      for (const t of tables) {
+        const el = document.getElementById(t.key);
+        if (el && el.getBoundingClientRect().top <= mid) id = t.key;
+      }
+      setActive(id);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => { window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); cancelAnimationFrame(raf); };
+  }, [tables]);
+
+  return (
+    <div className="fixed inset-x-3 z-50 mx-auto max-w-md" style={{ bottom: "calc(10px + var(--safe-bottom))" }}>
+      <nav
+        aria-label="ניווט בין הטבלאות"
+        className="glass-strong isolate w-full rounded-[26px] border-2 border-gold/80 !bg-white/95 px-1.5 py-1.5 shadow-[0_22px_50px_-14px_rgba(19,48,110,0.55),0_0_0_4px_rgba(255,210,63,0.18)]"
+      >
+        <ul className="flex items-stretch justify-between gap-0.5">
+          {tables.map((t) => {
+            const on = active === t.key;
+            return (
+              <li key={t.key} className="flex-1">
+                <a
+                  href={`#${t.key}`}
+                  aria-current={on ? "true" : undefined}
+                  className={`relative flex flex-col items-center gap-0.5 rounded-2xl py-2 text-[12px] transition-colors ${on ? "font-extrabold text-navy" : "font-semibold text-royal"}`}
+                >
+                  {on && <span className="absolute inset-0 -z-10 rounded-2xl bg-gold/80 shadow-[inset_0_0_0_1px_rgba(255,210,63,1)]" />}
+                  <span className="relative">
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d={ICON[t.sport]} />
+                    </svg>
+                    {t.live && <span className="live-dot absolute -end-1 -top-0.5 h-2 w-2 rounded-full bg-down ring-2 ring-white" aria-label="משחק חי" />}
+                  </span>
+                  <span className="whitespace-nowrap">{SHORT[t.key] ?? t.title}</span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </div>
+  );
+}
+
 export function StandingsBoard({ initial }: { initial: { tables: Table[]; at: string } }) {
   const [data, setData] = useState(initial);
   const anyLive = data.tables.some((t) => t.live);
@@ -150,14 +216,7 @@ export function StandingsBoard({ initial }: { initial: { tables: Table[]; at: st
 
   return (
     <div>
-      {/* ניווט מהיר בין הטבלאות */}
-      <nav aria-label="טבלאות" className="sticky top-2 z-20 -mx-1 mb-4 flex gap-1.5 overflow-x-auto rounded-full bg-white/80 p-1 shadow-[0_8px_24px_-16px_rgba(19,48,110,.5)] backdrop-blur [scrollbar-width:none]">
-        {data.tables.map((t) => (
-          <a key={t.key} href={`#${t.key}`} className="press inline-flex shrink-0 items-center gap-1.5 rounded-full bg-royal/[0.07] px-3 py-1.5 text-[13px] font-bold text-royal">
-            {t.live && <LiveDot />}{t.title}
-          </a>
-        ))}
-      </nav>
+      <TablesNav tables={data.tables} />
 
       <p className="mb-3 flex items-center gap-1.5 text-[12px] text-muted">
         {anyLive ? <><LiveDot /><b className="text-down">יש משחקים עכשיו</b> · הטבלאות מתעדכנות חי כל 30 שניות</> : "מתעדכן בכל כניסה לדף"}
@@ -168,7 +227,7 @@ export function StandingsBoard({ initial }: { initial: { tables: Table[]; at: st
         {data.tables.map((t) => <LeagueTable key={t.key} t={t} />)}
       </div>
 
-      <p className="mt-4 text-[11.5px] text-muted">מקור הנתונים: 365Scores (הוצלב מול ערוץ הספורט וה-API הרשמי של היורוליג).</p>
+      <p className="mb-16 mt-4 text-[11.5px] text-muted">מקור הנתונים: 365Scores (הוצלב מול ערוץ הספורט וה-API הרשמי של היורוליג).</p>
     </div>
   );
 }
