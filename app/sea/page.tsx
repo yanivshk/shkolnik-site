@@ -10,7 +10,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/sea" },
 };
 
-export const revalidate = 1800;
+// הדף נבנה מחדש בכל כניסה (לא עותק שמור), כך שגם הטעינה הראשונה מציגה נתונים עדכניים
+export const dynamic = "force-dynamic";
 
 export default async function Page() {
   const surf = await getSurf(DEFAULT_SPOT_ID, MAX_SURF_DAYS);
