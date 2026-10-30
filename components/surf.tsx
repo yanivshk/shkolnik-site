@@ -9,7 +9,25 @@ import { isFresh, validateSurf, validateWeatherHours } from "@/lib/surf-validate
 import { DEFAULT_SPOT_ID, SURF_SPOTS, dirFull, dirShort, spotById, waveLabel, wavePower, type Surf, type SurfHour } from "@/lib/surf-spots";
 
 const STORE_KEY = "surf-spot";
-const REFRESH_MS = 30 * 60 * 1000; // רענון כל חצי שעה
+const REFRESH_MS = 15 * 60 * 1000; // רענון כל רבע שעה
+const RETURN_MS = 5 * 60 * 1000; // חזרה לדף (לשונית / אפליקציה / כפתור אחורה) אחרי 5 דקות ומעלה — רענון מיידי
+
+/** מריץ את cb כשחוזרים לדף אחרי לפחות RETURN_MS (גם כשהדפדפן משחזר דף שמור — pageshow) */
+function useOnReturn(cb: () => void) {
+  const ref = useRef(cb);
+  useEffect(() => { ref.current = cb; });
+  useEffect(() => {
+    let hiddenAt = Date.now();
+    const onVis = () => {
+      if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
+      if (Date.now() - hiddenAt >= RETURN_MS) ref.current();
+    };
+    const onShow = (e: PageTransitionEvent) => { if (e.persisted) ref.current(); };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pageshow", onShow);
+    return () => { document.removeEventListener("visibilitychange", onVis); window.removeEventListener("pageshow", onShow); };
+  }, []);
+}
 
 function readSpot(): number | null {
   try {
@@ -438,6 +456,7 @@ function useWxPlace(hours: SurfHour[]) {
     const id = setInterval(() => { if (placeRef.current) load(placeRef.current); }, REFRESH_MS);
     return () => clearInterval(id);
   }, [load]);
+  useOnReturn(() => { if (placeRef.current) load(placeRef.current); });
 
   const choose = useCallback((p: WxPlace | null) => { placeRef.current = p; setPlace(p); saveWxPlace(p); load(p); }, [load]);
   const ready = !!place && wx?.key === placeKey(place);
@@ -691,11 +710,14 @@ function useSurf(initial: Surf | null, days: number) {
     // בדף הים: חוף לפי קואורדינטות (עיר) גובר על חוף מהרשימה
     const coast = days > 1 ? readCoast() : null;
     const saved = readSpot();
-    if (coast) { locRef.current = coast; load(coast); }
-    else if (saved && saved !== (locRef.current as { spot?: number }).spot) { locRef.current = { spot: saved }; load(locRef.current); }
+    if (coast) locRef.current = coast;
+    else if (saved) locRef.current = { spot: saved };
+    // תמיד מביאים נתונים טריים מיד עם הטעינה — לא סומכים על העותק שהגיע עם הדף (ייתכן שנשמר בדפדפן)
+    load(locRef.current);
     const id = setInterval(() => load(locRef.current), REFRESH_MS);
     return () => clearInterval(id);
   }, [load, days]);
+  useOnReturn(() => load(locRef.current));
 
   const choose = useCallback(async (id: number) => {
     locRef.current = { spot: id };
