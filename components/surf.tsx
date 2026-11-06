@@ -512,7 +512,8 @@ const PRESET_CITIES: WxPlace[] = [
 /** בחירת עיר לגרף מזג האוויר: ערים קבועות, חיפוש חופשי (כמו בעמוד הבית) וחזרה לחוף שנבחר */
 function PlacePicker({ current, spotName, onChoose, beach, variant = "dark" }: { current: string; spotName: string; onChoose: (p: WxPlace | null) => void; beach: boolean; variant?: "dark" | "scene" }) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  // החלון צמוד לחלק הנראה של המסך (מעל המקלדת בטלפון), לא לכפתור — כך הוא לא "בורח" כשהמקלדת נפתחת והדף זז
+  const [vv, setVv] = useState<{ top: number; height: number } | null>(null);
   const [q, setQ] = useState("");
   const [results, setResults] = useState<{ name: string; country: string; lat: number; lon: number }[]>([]);
   // מצב החיפוש: מחפש / נמצאו תוצאות / לא נמצא (לשאילתה שהסתיימה)
@@ -523,30 +524,28 @@ function PlacePicker({ current, spotName, onChoose, beach, variant = "dark" }: {
   const btnRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
 
-  const place = useCallback(() => {
-    const r = btnRef.current?.getBoundingClientRect();
-    if (r) setPos({ top: r.bottom + 8, right: window.innerWidth - r.right });
-  }, []);
-
   useLayoutEffect(() => {
     if (!open) return;
-    place();
-    const onDown = (e: PointerEvent) => {
-      const t = e.target as Node;
-      if (!popRef.current?.contains(t) && !btnRef.current?.contains(t)) setOpen(false);
-    };
+    const v = window.visualViewport;
+    const fit = () => setVv({ top: v?.offsetTop ?? 0, height: v?.height ?? window.innerHeight });
+    fit();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    window.addEventListener("resize", place);
-    window.addEventListener("scroll", place, { passive: true });
-    document.addEventListener("pointerdown", onDown);
+    // הדף מאחורי החלון לא נגלל
+    const root = document.documentElement;
+    const prevOverflow = root.style.overflow;
+    root.style.overflow = "hidden";
+    v?.addEventListener("resize", fit);
+    v?.addEventListener("scroll", fit);
+    window.addEventListener("resize", fit);
     document.addEventListener("keydown", onKey);
     return () => {
-      window.removeEventListener("resize", place);
-      window.removeEventListener("scroll", place);
-      document.removeEventListener("pointerdown", onDown);
+      root.style.overflow = prevOverflow;
+      v?.removeEventListener("resize", fit);
+      v?.removeEventListener("scroll", fit);
+      window.removeEventListener("resize", fit);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open, place]);
+  }, [open]);
 
   const pick = useCallback((p: WxPlace | null) => {
     pickFirst.current = false;
@@ -595,64 +594,84 @@ function PlacePicker({ current, spotName, onChoose, beach, variant = "dark" }: {
         {current}
         <I d="m6 9 6 6 6-6" className="h-3 w-3" />
       </button>
-      {open && pos && createPortal(
-        <div ref={popRef} className="glass-strong fixed z-[70] w-[min(92vw,300px)] !bg-white rounded-2xl p-3 text-ink shadow-xl" style={{ top: pos.top, right: pos.right }} dir="rtl">
-          <label className="mb-2 block text-[12px] font-semibold text-muted" htmlFor="sea-wx-q">בחירת מיקום · או חיפוש כל עיר</label>
-          {/* ערים קבועות */}
-          <div className="grid grid-cols-2 gap-1">
-            {PRESET_CITIES.map((c) => (
-              <button
-                key={c.name}
-                type="button"
-                onClick={() => pick(c)}
-                aria-pressed={!beach && current === c.name}
-                className={`rounded-lg px-2 py-1.5 text-right text-[14px] ${!beach && current === c.name ? "bg-royal/10 font-bold text-royal" : "hover:bg-royal/[0.06]"}`}
-              >
-                {c.name}
-              </button>
-            ))}
+      {open && vv && createPortal(
+        <div className="fixed inset-0 z-[70]" dir="rtl">
+          <button type="button" aria-label="סגירה" onClick={() => setOpen(false)} className="absolute inset-0 bg-[#0b1a3f]/45 backdrop-blur-[2px]" />
+          <div
+            ref={popRef}
+            role="dialog"
+            aria-label="בחירת מיקום"
+            className="absolute inset-x-3 mx-auto flex max-w-[420px] flex-col overflow-hidden rounded-2xl bg-white text-ink shadow-[0_24px_60px_-20px_rgba(11,26,63,0.7)]"
+            style={{ top: vv.top + 10, maxHeight: vv.height - 20 }}
+          >
+            {/* החיפוש בראש החלון — תמיד גלוי מעל המקלדת */}
+            <div className="shrink-0 border-b border-line p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <label className="text-[13px] font-bold text-navy" htmlFor="sea-wx-q">בחירת מיקום · או חיפוש כל עיר</label>
+                <button type="button" onClick={() => setOpen(false)} aria-label="סגירה" className="grid h-8 w-8 place-items-center rounded-full bg-royal/[0.07] text-[18px] leading-none text-navy">×</button>
+              </div>
+              <input
+                id="sea-wx-q"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter") return;
+                  e.preventDefault();
+                  if (results[0]) pick({ name: results[0].name, lat: results[0].lat, lon: results[0].lon });
+                  else if (searching) pickFirst.current = true;
+                }}
+                enterKeyHint="search"
+                autoComplete="off"
+                placeholder="הקלידו שם של עיר או יישוב"
+                // 16px לפחות — אחרת אייפון מגדיל את הדף כשמקלידים
+                className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-[16px] outline-none focus:border-royal"
+              />
+              <p role="status" aria-live="polite" className="min-h-[20px] px-1 pt-1 text-[12.5px] font-semibold">
+                {searching ? (
+                  <span className="inline-flex items-center gap-1.5 text-royal"><span className="h-3 w-3 animate-spin rounded-full border-2 border-royal/30 border-t-royal" />מחפש…</span>
+                ) : failedSearch ? (
+                  <span className="text-down">החיפוש לא הצליח כרגע — נסו שוב בעוד רגע</span>
+                ) : searched && !results.length ? (
+                  <span className="text-down">לא נמצא יישוב בשם „{searched}“ — נסו כתיב אחר</span>
+                ) : results.length ? (
+                  <span className="text-muted">בחרו מהרשימה:</span>
+                ) : null}
+              </p>
+            </div>
+            {/* תוצאות, חזרה לחוף וערים קבועות — נגללים בתוך החלון */}
+            <div className="min-h-0 overflow-y-auto overscroll-contain p-3 pt-1">
+              <ul>
+                {results.map((p) => (
+                  <li key={`${p.lat},${p.lon}`}>
+                    <button type="button" onClick={() => pick({ name: p.name, lat: p.lat, lon: p.lon })} className="w-full rounded-lg px-2 py-2.5 text-right text-[15px] hover:bg-royal/[0.06]">
+                      <span className="font-semibold">{p.name}</span>
+                      {p.country && <span className="text-[12px] text-muted"> · {p.country}</span>}
+                    </button>
+                  </li>
+                ))}
+                <li>
+                  <button type="button" onClick={() => pick(null)} aria-pressed={beach} className={`w-full rounded-lg px-2 py-2.5 text-right text-[15px] ${beach ? "bg-royal/10 text-royal" : "hover:bg-royal/[0.06]"}`}>
+                    <span className="font-semibold">{spotName}</span>
+                    <span className="text-[12px] text-muted"> · לפי החוף שנבחר</span>
+                  </button>
+                </li>
+              </ul>
+              <p className="mb-1 mt-2 px-1 text-[12px] font-semibold text-muted">ערים</p>
+              <div className="grid grid-cols-2 gap-1">
+                {PRESET_CITIES.map((c) => (
+                  <button
+                    key={c.name}
+                    type="button"
+                    onClick={() => pick(c)}
+                    aria-pressed={!beach && current === c.name}
+                    className={`rounded-lg px-2 py-2 text-right text-[15px] ${!beach && current === c.name ? "bg-royal/10 font-bold text-royal" : "hover:bg-royal/[0.06]"}`}
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <input
-            id="sea-wx-q"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key !== "Enter") return;
-              e.preventDefault();
-              if (results[0]) pick({ name: results[0].name, lat: results[0].lat, lon: results[0].lon });
-              else if (searching) pickFirst.current = true;
-            }}
-            enterKeyHint="search"
-            placeholder="הקלידו שם של עיר או יישוב"
-            className="mt-2 w-full rounded-xl border border-line bg-white px-3 py-2 text-[14px] outline-none focus:border-royal"
-          />
-          <p role="status" aria-live="polite" className="min-h-[20px] px-1 pt-1 text-[12.5px] font-semibold">
-            {searching ? (
-              <span className="inline-flex items-center gap-1.5 text-royal"><span className="h-3 w-3 animate-spin rounded-full border-2 border-royal/30 border-t-royal" />מחפש…</span>
-            ) : failedSearch ? (
-              <span className="text-down">החיפוש לא הצליח כרגע — נסו שוב בעוד רגע</span>
-            ) : searched && !results.length ? (
-              <span className="text-down">לא נמצא יישוב בשם „{searched}“ — נסו כתיב אחר</span>
-            ) : results.length ? (
-              <span className="text-muted">בחרו מהרשימה:</span>
-            ) : null}
-          </p>
-          <ul className="mt-2 max-h-56 overflow-auto border-t border-line pt-1">
-            <li>
-              <button type="button" onClick={() => pick(null)} aria-pressed={beach} className={`w-full rounded-lg px-2 py-2 text-right text-[14px] ${beach ? "bg-royal/10 text-royal" : "hover:bg-royal/[0.06]"}`}>
-                <span className="font-semibold">{spotName}</span>
-                <span className="text-[12px] text-muted"> · לפי החוף שנבחר</span>
-              </button>
-            </li>
-            {results.map((p) => (
-              <li key={`${p.lat},${p.lon}`}>
-                <button type="button" onClick={() => pick({ name: p.name, lat: p.lat, lon: p.lon })} className="w-full rounded-lg px-2 py-2 text-right text-[14px] hover:bg-royal/[0.06]">
-                  <span className="font-semibold">{p.name}</span>
-                  {p.country && <span className="text-[12px] text-muted"> · {p.country}</span>}
-                </button>
-              </li>
-            ))}
-          </ul>
         </div>,
         document.body,
       )}
