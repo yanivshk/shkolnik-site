@@ -6,7 +6,7 @@ const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https://upload.wikimedia.org https://a.espncdn.com",
+  "img-src 'self' data: https://upload.wikimedia.org https://a.espncdn.com https://tilecache.rainviewer.com https://server.arcgisonline.com",
   "font-src 'self' data:",
   "connect-src 'self'",
   "frame-src https://calendar.2net.co.il",

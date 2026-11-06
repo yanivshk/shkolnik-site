@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * מכ"ם גשם אינטראקטיבי: מפה כהה של ישראל + שכבת הגשם מ-RainViewer לשעתיים האחרונות (כל 10 דקות).
- * גרירה על פס הזמן / כפתור ניגון מעבירים בין התמונות. כל האריחים עוברים דרך השרת שלנו (/api/radar/tile, /api/basemap).
+ * גרירה על פס הזמן / כפתור ניגון מעבירים בין התמונות. האריחים נטענים ישירות מ-RainViewer ומ-Esri (לא דרך השרת שלנו):
+ * כ-130 אריחים בכל כניסה דרך השרת הפעילו את חסימת העומס של Vercel, וחסמו גם את בקשות התחזית.
  */
 
 type Frame = { time: number; path: string; forecast: boolean };
@@ -43,6 +44,13 @@ function tiles(left: number, top: number, z: number) {
   }
   return out;
 }
+
+/** אריח גשם — ישירות מ-RainViewer (בנתוני דמה: דרך השרת, שמצייר אריח דמה) */
+const rainSrc = (path: string, x: number, y: number) =>
+  path.includes("mockframe") ? `/api/radar/tile?p=${encodeURIComponent(path)}&z=${Z}&x=${x}&y=${y}` : `https://tilecache.rainviewer.com${path}/256/${Z}/${x}/${y}/2/1_1.png`;
+/** אריח מפה כהה — ישירות מ-Esri (base = רקע, ref = שמות ערים וגבולות) */
+const mapSrc = (layer: "Base" | "Reference", x: number, y: number) =>
+  `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_${layer}/MapServer/tile/8/${y}/${x}`;
 
 const hm = (t: number) => new Intl.DateTimeFormat("he-IL", { timeZone: "Asia/Jerusalem", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(t * 1000));
 
@@ -121,7 +129,7 @@ export function RainRadar({ marker }: { marker?: { lat: number; lon: number; nam
       <div className="relative w-full overflow-hidden rounded-xl bg-[#1b1b1d]" style={{ aspectRatio: `1 / ${ASPECT}` }}>
         {baseTiles.map((t) => (
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={`b${t.x}-${t.y}`} src={`/api/basemap?l=base&z=8&x=${t.x}&y=${t.y}`} alt="" className="absolute max-w-none select-none" style={t.style} draggable={false} />
+          <img key={`b${t.x}-${t.y}`} src={mapSrc("Base", t.x, t.y)} alt="" className="absolute max-w-none select-none" style={t.style} draggable={false} />
         ))}
         {/* כל התמונות נטענות מראש ומוחלפות בשקיפות — בלי הבהוב בזמן הגרירה */}
         {frames.map((f, i) =>
@@ -129,14 +137,14 @@ export function RainRadar({ marker }: { marker?: { lat: number; lon: number; nam
             <div key={f.path} className="absolute inset-0 transition-opacity duration-150" style={{ opacity: i === idx ? 0.85 : 0 }} aria-hidden>
               {rainTiles.map((t) => (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img key={`${t.x}-${t.y}`} src={`/api/radar/tile?p=${encodeURIComponent(f.path)}&z=7&x=${t.x}&y=${t.y}`} alt="" className="absolute max-w-none select-none" style={t.style} draggable={false} onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+                <img key={`${t.x}-${t.y}`} src={rainSrc(f.path, t.x, t.y)} alt="" className="absolute max-w-none select-none" style={t.style} draggable={false} onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
               ))}
             </div>
           ) : null,
         )}
         {baseTiles.map((t) => (
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={`r${t.x}-${t.y}`} src={`/api/basemap?l=ref&z=8&x=${t.x}&y=${t.y}`} alt="" className="pointer-events-none absolute max-w-none select-none" style={t.style} draggable={false} />
+          <img key={`r${t.x}-${t.y}`} src={mapSrc("Reference", t.x, t.y)} alt="" className="pointer-events-none absolute max-w-none select-none" style={t.style} draggable={false} />
         ))}
         {pin && (
           <span className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${((pin.x - left) / VIEW_W) * 100}%`, top: `${((pin.y - top) / VIEW_H) * 100}%` }}>
