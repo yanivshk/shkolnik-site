@@ -55,10 +55,22 @@ export async function getWeather(lat: number, lon: number, name: string): Promis
 
 type GeoResult = { results?: { name: string; country?: string; latitude: number; longitude: number; admin1?: string }[] };
 
+type OsmResult = { name?: string; addresstype?: string; lat: string; lon: string; address?: { state?: string; country?: string } };
+const OSM_TYPES = new Set(["city", "town", "village", "hamlet", "suburb", "municipality"]);
+
+/**
+ * חיפוש יישוב: קודם Open-Meteo; אם לא נמצא כלום — OpenStreetMap (Nominatim),
+ * שמכיר גם כתיב אחר ("פתח תקוה", "קריית אונו") ויישובים שחסרים ב-Open-Meteo ("ראש העין").
+ */
 export async function searchPlaces(q: string): Promise<Place[]> {
   if (process.env.MOCK_DATA === "1") {
     return [DEFAULT_PLACE, { name: "ירושלים", country: "ישראל", lat: 31.7683, lon: 35.2137 }];
   }
+  const first = await openMeteoPlaces(q);
+  return first.length ? first : osmPlaces(q);
+}
+
+async function openMeteoPlaces(q: string): Promise<Place[]> {
   try {
     const res = await fetch(
       `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=he&format=json`,
@@ -72,6 +84,28 @@ export async function searchPlaces(q: string): Promise<Place[]> {
       lat: r.latitude,
       lon: r.longitude,
     }));
+  } catch {
+    return [];
+  }
+}
+
+async function osmPlaces(q: string): Promise<Place[]> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=jsonv2&limit=8&addressdetails=1&accept-language=he&featureType=settlement`,
+      { headers: { "User-Agent": "ShkolnikHub/1.0 (+https://www.shkolnik.co.il)" }, next: { revalidate: 86400 }, signal: AbortSignal.timeout(8000) },
+    );
+    if (!res.ok) return [];
+    const out: Place[] = [];
+    for (const r of (await res.json()) as OsmResult[]) {
+      const lat = Number(r.lat), lon = Number(r.lon);
+      if (!r.name || !OSM_TYPES.has(r.addresstype ?? "") || !Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+      // אותו יישוב מופיע לפעמים פעמיים (נקודה + גבול) — שומרים אחד
+      if (out.some((p) => p.name === r.name && Math.abs(p.lat - lat) < 0.05 && Math.abs(p.lon - lon) < 0.05)) continue;
+      out.push({ name: r.name, country: [r.address?.state, r.address?.country].filter(Boolean).join(", "), lat: Math.round(lat * 1e4) / 1e4, lon: Math.round(lon * 1e4) / 1e4 });
+      if (out.length >= 6) break;
+    }
+    return out;
   } catch {
     return [];
   }

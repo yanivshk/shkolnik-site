@@ -434,19 +434,23 @@ function useWxPlace(hours: SurfHour[]) {
   const seq = useRef(0);
   const placeRef = useRef<WxPlace | null>(null);
 
-  const load = useCallback(async (p: WxPlace | null) => {
+  /** מחזיר "ok" / "error", או "stale" אם בינתיים נבחר מקום אחר */
+  const load = useCallback(async (p: WxPlace | null): Promise<"ok" | "error" | "stale"> => {
     const my = ++seq.current;
     setFailed(false);
-    if (!p) { setBusy(false); return; }
+    if (!p) { setBusy(false); return "ok"; }
     setBusy(true);
     try {
       const r = await fetch(`/api/forecast?lat=${p.lat}&lon=${p.lon}`);
       const list = r.ok ? validateWeatherHours<HourlyWeather>(await r.json()) : null; // אימות שני — בדפדפן
-      if (my !== seq.current) return; // הגיעה בינתיים בחירה חדשה
-      if (list) setWx({ key: placeKey(p), map: new Map(list.map((x) => [x.time, x])) });
-      else setFailed(true);
+      if (my !== seq.current) return "stale"; // הגיעה בינתיים בחירה חדשה
+      if (list) { setWx({ key: placeKey(p), map: new Map(list.map((x) => [x.time, x])) }); return "ok"; }
+      setFailed(true);
+      return "error";
     } catch {
-      if (my === seq.current) setFailed(true);
+      if (my !== seq.current) return "stale";
+      setFailed(true);
+      return "error";
     } finally {
       if (my === seq.current) setBusy(false);
     }
@@ -458,7 +462,7 @@ function useWxPlace(hours: SurfHour[]) {
   }, [load]);
   useOnReturn(() => { if (placeRef.current) load(placeRef.current); });
 
-  const choose = useCallback((p: WxPlace | null) => { placeRef.current = p; setPlace(p); saveWxPlace(p); load(p); }, [load]);
+  const choose = useCallback((p: WxPlace | null) => { placeRef.current = p; setPlace(p); saveWxPlace(p); return load(p); }, [load]);
   const ready = !!place && wx?.key === placeKey(place);
   const merged = useMemo(
     () =>
@@ -500,6 +504,11 @@ function PlacePicker({ current, spotName, onChoose, beach, variant = "dark" }: {
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
   const [q, setQ] = useState("");
   const [results, setResults] = useState<{ name: string; country: string; lat: number; lon: number }[]>([]);
+  // מצב החיפוש: מחפש / נמצאו תוצאות / לא נמצא (לשאילתה שהסתיימה)
+  const [searching, setSearching] = useState(false);
+  const [searched, setSearched] = useState("");
+  const [failedSearch, setFailedSearch] = useState(false);
+  const pickFirst = useRef(false); // Enter לפני שהתוצאות הגיעו — בוחרים את הראשונה כשתגיע
   const btnRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
 
@@ -528,19 +537,34 @@ function PlacePicker({ current, spotName, onChoose, beach, variant = "dark" }: {
     };
   }, [open, place]);
 
+  const pick = useCallback((p: WxPlace | null) => {
+    pickFirst.current = false;
+    setOpen(false); setQ(""); setResults([]); setSearched(""); setSearching(false);
+    onChoose(p);
+  }, [onChoose]);
+
   useEffect(() => {
-    if (q.trim().length < 2) { setResults([]); return; }
+    const term = q.trim();
+    setResults([]); setSearched(""); setFailedSearch(false);
+    if (term.length < 2) { setSearching(false); pickFirst.current = false; return; }
+    setSearching(true);
     let live = true;
     const t = setTimeout(async () => {
       try {
-        const r = await fetch(`/api/places?q=${encodeURIComponent(q.trim())}`);
-        if (live && r.ok) setResults(await r.json());
-      } catch { /* ignore */ }
+        const r = await fetch(`/api/places?q=${encodeURIComponent(term)}`);
+        if (!live) return;
+        const list = r.ok ? ((await r.json()) as typeof results) : [];
+        if (!live) return;
+        if (!r.ok) setFailedSearch(true);
+        setResults(list); setSearched(term); setSearching(false);
+        if (pickFirst.current && list[0]) pick({ name: list[0].name, lat: list[0].lat, lon: list[0].lon });
+        pickFirst.current = false;
+      } catch {
+        if (live) { setFailedSearch(true); setSearched(term); setSearching(false); pickFirst.current = false; }
+      }
     }, 300);
     return () => { live = false; clearTimeout(t); };
-  }, [q]);
-
-  const pick = (p: WxPlace | null) => { setOpen(false); setQ(""); setResults([]); onChoose(p); };
+  }, [q, pick]);
 
   return (
     <>
@@ -581,11 +605,27 @@ function PlacePicker({ current, spotName, onChoose, beach, variant = "dark" }: {
             id="sea-wx-q"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && results[0]) { e.preventDefault(); pick(results[0]); } }}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              if (results[0]) pick({ name: results[0].name, lat: results[0].lat, lon: results[0].lon });
+              else if (searching) pickFirst.current = true;
+            }}
             enterKeyHint="search"
-            placeholder="למשל: ירושלים"
+            placeholder="הקלידו שם של עיר או יישוב"
             className="mt-2 w-full rounded-xl border border-line bg-white px-3 py-2 text-[14px] outline-none focus:border-royal"
           />
+          <p role="status" aria-live="polite" className="min-h-[20px] px-1 pt-1 text-[12.5px] font-semibold">
+            {searching ? (
+              <span className="inline-flex items-center gap-1.5 text-royal"><span className="h-3 w-3 animate-spin rounded-full border-2 border-royal/30 border-t-royal" />מחפש…</span>
+            ) : failedSearch ? (
+              <span className="text-down">החיפוש לא הצליח כרגע — נסו שוב בעוד רגע</span>
+            ) : searched && !results.length ? (
+              <span className="text-down">לא נמצא יישוב בשם „{searched}“ — נסו כתיב אחר</span>
+            ) : results.length ? (
+              <span className="text-muted">בחרו מהרשימה:</span>
+            ) : null}
+          </p>
           <ul className="mt-2 max-h-56 overflow-auto border-t border-line pt-1">
             <li>
               <button type="button" onClick={() => pick(null)} aria-pressed={beach} className={`w-full rounded-lg px-2 py-2 text-right text-[14px] ${beach ? "bg-royal/10 text-royal" : "hover:bg-royal/[0.06]"}`}>
@@ -944,32 +984,75 @@ function CityBar({ current, onSelect }: { current: string; onSelect: (c: (typeof
   );
 }
 
+/** חיווי צף בראש המסך בזמן החלפת מיקום — נראה בכל מקום בדף */
+function SwitchToast({ sw }: { sw: { name: string; phase: "loading" | "done" | "error"; note?: string } | null }) {
+  return (
+    <div className="pointer-events-none fixed inset-x-0 z-[80] flex justify-center px-4" style={{ top: "calc(10px + env(safe-area-inset-top, 0px))" }}>
+      <div
+        role="status"
+        aria-live="polite"
+        className={`flex max-w-full items-center gap-2 rounded-full px-4 py-2 text-[14px] font-bold shadow-[0_12px_30px_-12px_rgba(19,48,110,0.7)] transition-all duration-300 ${sw ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0"} ${sw?.phase === "error" ? "bg-down text-white" : sw?.phase === "done" ? "bg-up text-white" : "bg-navy text-white"}`}
+      >
+        {sw?.phase === "loading" && <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-gold" />}
+        {sw?.phase === "done" && <span aria-hidden>✓</span>}
+        {sw?.phase === "error" && <span aria-hidden>!</span>}
+        <span className="truncate">
+          {sw?.phase === "loading" ? `מעדכן נתונים ל${sw.name}…` : sw?.phase === "done" ? `הנתונים עודכנו ל${sw.name}` : sw ? `לא הצלחנו לעדכן ל${sw.name}` : ""}
+        </span>
+        {sw?.phase === "done" && sw.note && <span className="shrink-0 text-[12px] font-semibold text-white/80">· {sw.note}</span>}
+      </div>
+    </div>
+  );
+}
+
 export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: number }) {
   const { s, busy, choose, chooseAt, now } = useSurf(initial, days);
   const wx = useWxPlace(s?.hours ?? []);
   const [selError, setSelError] = useState<string | null>(null);
   const coastRef = useRef<WxPlace | null>(null);
+  // חיווי החלפת מיקום: "מעדכן…" בזמן הטעינה, "עודכן" לרגע אחרי, או שגיאה
+  const [sw, setSw] = useState<{ name: string; phase: "loading" | "done" | "error"; note?: string } | null>(null);
+  const swSeq = useRef(0);
+  const swTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showSw = useCallback((v: NonNullable<typeof sw> | null, my: number) => {
+    if (my !== swSeq.current) return;
+    if (swTimer.current) clearTimeout(swTimer.current);
+    setSw(v);
+    if (v && v.phase !== "loading") swTimer.current = setTimeout(() => { if (my === swSeq.current) setSw(null); }, v.phase === "done" ? 2600 : 5000);
+  }, []);
 
   /**
    * בחירת מיקום אחת לכל הדף (סרגל למטה, כפתור המיקום, ערים קבועות וחיפוש):
    * עיר עם ים → כל הדף עובר אליה (כולל גלים); עיר בלי ים → מזג אוויר בלבד, והחלק של הים מוסתר.
    * בחירה חדשה מבטלת תשובה של בחירה קודמת שעוד לא הגיעה.
    */
-  const select = useCallback(async (p: WxPlace | null) => {
+  const select = useCallback(async (p: WxPlace | null, quiet = false) => {
     setSelError(null);
-    if (!p) { wx.choose(null); return; }
+    const my = ++swSeq.current;
+    const label = p?.name ?? (s ? spotLabel(s.spot) : "");
+    if (!quiet) showSw({ name: label, phase: "loading" }, my);
+    if (!p) { await wx.choose(null); if (!quiet) showSw({ name: label, phase: "done" }, my); return; }
     const bar = BAR_CITIES.find((c) => c.spot != null && c.name === p.name);
     const res = bar ? await choose(bar.spot!) : await chooseAt({ name: p.name, lat: p.lat, lon: p.lon });
-    if (res === "stale") return;
-    if (res === "ok") { coastRef.current = bar ? null : p; wx.choose(null); }
-    else if (res === "no-sea") wx.choose(p);
-    else setSelError(`לא הצלחנו לטעון את התחזית ל${p.name} — הנתונים בדף לא הוחלפו. נסו שוב בעוד רגע.`);
-  }, [choose, chooseAt, wx]);
+    if (res === "stale" || my !== swSeq.current) return;
+    if (res === "ok") {
+      coastRef.current = bar ? null : p;
+      await wx.choose(null);
+      if (!quiet) showSw({ name: p.name, phase: "done", note: "ים, גלים ומזג אוויר" }, my);
+    } else if (res === "no-sea") {
+      const w = await wx.choose(p);
+      if (w === "stale" || quiet) return;
+      showSw(w === "ok" ? { name: p.name, phase: "done", note: "מזג אוויר · אין ים" } : { name: p.name, phase: "error" }, my);
+    } else {
+      setSelError(`לא הצלחנו לטעון את התחזית ל${p.name} — הנתונים בדף לא הוחלפו. נסו שוב בעוד רגע.`);
+      if (!quiet) showSw({ name: p.name, phase: "error" }, my);
+    }
+  }, [choose, chooseAt, wx, s, showSw]);
 
   // מיקום שנשמר בכניסה הקודמת (עיר) — נבחר מחדש באותו מסלול, כולל בדיקת ים
   useEffect(() => {
     const saved = readWxPlace();
-    if (saved) select(saved);
+    if (saved) select(saved, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [picked, setPicked] = useState<number | null>(null);
@@ -1015,6 +1098,7 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
 
   return (
     <div aria-busy={busy || wx.busy}>
+      <SwitchToast sw={sw} />
       <DeckTitle>עכשיו בחוץ</DeckTitle>
       {selError && <p role="alert" className="mb-2 rounded-xl bg-down/10 px-3 py-2 text-[13px] font-semibold text-down">{selError}</p>}
       {wx.place && !wx.ready && (
@@ -1022,7 +1106,7 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
           {wx.failed ? `לא הצלחנו לטעון את מזג האוויר ב${wx.place.name}. נסו שוב בעוד רגע.` : `טוען את התחזית ל${wx.place.name}…`}
         </p>
       )}
-      <div className={`transition-opacity ${wx.busy ? "opacity-60" : ""}`}>
+      <div className={`transition-opacity ${wx.busy || sw?.phase === "loading" ? "opacity-60" : ""}`}>
         {/* המיקום בראש הסיכום — קובע את "עכשיו בחוץ", "השבוע במבט אחד" וגרף מזג האוויר. נתוני הים תמיד מהחוף שנבחר */}
         <NowCard
           hours={wx.hours}
@@ -1033,7 +1117,7 @@ export function SeaDeck({ initial, days = 7 }: { initial: Surf | null; days?: nu
       </div>
 
       <DeckTitle className="mt-6">השבוע במבט אחד <span className="text-[12.5px] font-semibold text-muted">בוקר · צהריים · ערב</span></DeckTitle>
-      <div className={`transition-opacity ${wx.busy ? "opacity-60" : ""}`}>
+      <div className={`transition-opacity ${wx.busy || sw?.phase === "loading" ? "opacity-60" : ""}`}>
         <WeekGrid hours={wx.hours} now={now} sel={sel} coastal={!wx.place} onSel={go} />
       </div>
 
