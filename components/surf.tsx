@@ -12,6 +12,16 @@ const STORE_KEY = "surf-spot";
 const REFRESH_MS = 15 * 60 * 1000; // רענון כל רבע שעה
 const RETURN_MS = 5 * 60 * 1000; // חזרה לדף (לשונית / אפליקציה / כפתור אחורה) אחרי 5 דקות ומעלה — רענון מיידי
 
+/** בקשה עם ניסיון חוזר אחד אחרי תקלה רגעית (עומס 429, שגיאת שרת או ניתוק) */
+async function fetchRetry(url: string): Promise<Response> {
+  try {
+    const r = await fetch(url);
+    if (r.status !== 429 && r.status < 500) return r;
+  } catch { /* ננסה שוב */ }
+  await new Promise((x) => setTimeout(x, 1500));
+  return fetch(url);
+}
+
 /** מריץ את cb כשחוזרים לדף אחרי לפחות RETURN_MS (גם כשהדפדפן משחזר דף שמור — pageshow) */
 function useOnReturn(cb: () => void) {
   const ref = useRef(cb);
@@ -441,7 +451,7 @@ function useWxPlace(hours: SurfHour[]) {
     if (!p) { setBusy(false); return "ok"; }
     setBusy(true);
     try {
-      const r = await fetch(`/api/forecast?lat=${p.lat}&lon=${p.lon}`);
+      const r = await fetchRetry(`/api/forecast?lat=${p.lat}&lon=${p.lon}`);
       const list = r.ok ? validateWeatherHours<HourlyWeather>(await r.json()) : null; // אימות שני — בדפדפן
       if (my !== seq.current) return "stale"; // הגיעה בינתיים בחירה חדשה
       if (list) { setWx({ key: placeKey(p), map: new Map(list.map((x) => [x.time, x])) }); return "ok"; }
@@ -552,7 +562,7 @@ function PlacePicker({ current, spotName, onChoose, beach, variant = "dark" }: {
     let live = true;
     const t = setTimeout(async () => {
       try {
-        const r = await fetch(`/api/places?q=${encodeURIComponent(term)}`);
+        const r = await fetchRetry(`/api/places?q=${encodeURIComponent(term)}`);
         if (!live) return;
         const list = r.ok ? ((await r.json()) as typeof results) : [];
         if (!live) return;
@@ -730,7 +740,7 @@ function useSurf(initial: Surf | null, days: number) {
       ? `/api/surf?spot=${loc.spot}&days=${days}`
       : `/api/surf?lat=${loc.lat}&lon=${loc.lon}&name=${encodeURIComponent(loc.name)}&days=${days}`;
     try {
-      const r = await fetch(retry ? base : `${base}&fresh=${Date.now()}`);
+      const r = await fetchRetry(retry ? base : `${base}&fresh=${Date.now()}`);
       if (my !== seq.current) return "stale";
       if (r.status === 404) return "no-sea";
       if (!r.ok) return "error";
