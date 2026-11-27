@@ -1,22 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Row, Table } from "@/lib/standings";
 import { RealBasketball, RealSoccerBall } from "@/components/maccabi";
 
 /**
- * טבלאות ספורט — מתעדכנות בכל כניסה, ובזמן משחקים מתרעננות כל 30 שניות ("טבלה חיה").
+ * טבלאות ספורט — "טבלה חיה": מתרעננות כל 15 שניות בזמן משחק, כל 30 שניות סביב שעת פתיחה של משחק, ואחרת כל 5 דקות.
+ * שורה שהמיקום או הנקודות שלה השתנו מהבהבת לרגע; קבוצה שסיימה משחק בשעות האחרונות מסומנת "הסתיים".
  * מכבי תל אביב מודגשת בצהוב-כחול.
  */
 
 const isMaccabi = (name: string) => /^מכבי (תל אביב|ת"א)/.test(name);
-const hm = (iso: string) => new Intl.DateTimeFormat("he-IL", { timeZone: "Asia/Jerusalem", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(iso));
 
 function LiveDot() {
   return <span className="live-dot inline-block h-2 w-2 shrink-0 rounded-full bg-down" aria-hidden />;
 }
 
 function TeamCell({ r }: { r: Row }) {
+  const res = r.final ? (r.final.my > r.final.their ? "win" : r.final.my < r.final.their ? "loss" : "draw") : null;
   return (
     <div className="flex min-w-0 items-center gap-1.5">
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -35,13 +36,22 @@ function TeamCell({ r }: { r: Row }) {
             </span>
             <span className="truncate font-semibold text-muted">מול {r.live.opponent}</span>
           </div>
+        ) : r.final ? (
+          // משחק שהסתיים לאחרונה — כבר נספר בטבלה
+          <div className="mt-0.5 flex min-w-0 items-center gap-1 text-[11.5px]">
+            <span className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-px font-extrabold ${res === "win" ? "bg-up/15 text-up" : res === "loss" ? "bg-down/10 text-down" : "bg-royal/10 text-royal"}`}>
+              <span>הסתיים</span>
+              <span dir="ltr" className="tabular">{r.final.my}–{r.final.their}</span>
+            </span>
+            <span className="truncate font-semibold text-muted">מול {r.final.opponent}</span>
+          </div>
         ) : null}
       </div>
     </div>
   );
 }
 
-function LeagueTable({ t }: { t: Table }) {
+function LeagueTable({ t, changed }: { t: Table; changed: Set<number> }) {
   const football = t.kind === "football";
   const head = football
     ? ["מש׳", "נ׳", "ת׳", "ה׳", "שערים", "הפרש", "נק׳"]
@@ -92,7 +102,7 @@ function LeagueTable({ t }: { t: Table }) {
               return (
                 <tr
                   key={r.id}
-                  className={`border-b border-line/70 last:border-0 ${mac ? "bg-gold-soft/70" : r.live ? "bg-down/[0.04]" : ""}`}
+                  className={`border-b border-line/70 transition-colors duration-[1500ms] last:border-0 ${changed.has(r.id) ? "!bg-gold/45 duration-150" : mac ? "bg-gold-soft/70" : r.live ? "bg-down/[0.04]" : ""}`}
                   style={{ boxShadow: destColor(r.dest) ? `inset -3px 0 0 ${destColor(r.dest)}` : undefined }}
                 >
                   <td className="py-2 text-center text-[13px] font-bold text-muted">{r.pos}</td>
@@ -206,36 +216,77 @@ function TablesNav({ tables }: { tables: Table[] }) {
   );
 }
 
+/** לפני כמה זמן — "לפני 12 שניות" / "לפני 3 דקות" */
+function ago(iso: string, now: number) {
+  const s = Math.max(0, Math.round((now - Date.parse(iso)) / 1000));
+  if (s < 60) return s < 5 ? "עכשיו" : `לפני ${s} שניות`;
+  const m = Math.round(s / 60);
+  return m === 1 ? "לפני דקה" : `לפני ${m} דקות`;
+}
+
+/** כמה זמן עד הרענון הבא: משחק חי → 15 שניות; 10 דקות לפני פתיחה ועד שהמשחק מתחיל → 30 שניות; אחרת 5 דקות */
+function nextDelay(tables: Table[], now: number) {
+  if (tables.some((t) => t.live)) return 15_000;
+  const soon = tables.some((t) => t.nextKickoff && Date.parse(t.nextKickoff) - now < 10 * 60_000);
+  return soon ? 30_000 : 300_000;
+}
+
 export function StandingsBoard({ initial }: { initial: { tables: Table[]; at: string } }) {
   const [data, setData] = useState(initial);
+  const [now, setNow] = useState(() => Date.parse(initial.at));
+  const [changed, setChanged] = useState<Set<number>>(new Set());
+  const dataRef = useRef(data);
   const anyLive = data.tables.some((t) => t.live);
 
-  // רענון: כל 30 שניות כשיש משחק חי, אחרת כל 5 דקות; וגם בחזרה ללשונית
+  // רענון אוטומטי בקצב שמתאים למצב (ראו nextDelay), וגם מיד בחזרה ללשונית
   useEffect(() => {
     let alive = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let flash: ReturnType<typeof setTimeout> | undefined;
     const load = async () => {
+      clearTimeout(timer);
       try {
         const r = await fetch("/api/standings", { cache: "no-store" });
-        if (r.ok && alive) setData(await r.json());
+        if (r.ok && alive) {
+          const next = (await r.json()) as typeof initial;
+          // שורות שהמיקום או הנקודות שלהן השתנו — מהבהבות לרגע
+          const before = new Map(dataRef.current.tables.flatMap((t) => t.rows.map((x) => [`${t.key}:${x.id}`, x] as const)));
+          const diff = new Set<number>();
+          for (const t of next.tables) for (const x of t.rows) {
+            const b = before.get(`${t.key}:${x.id}`);
+            if (b && (b.pos !== x.pos || b.points !== x.points || b.played !== x.played)) diff.add(x.id);
+          }
+          dataRef.current = next;
+          setData(next);
+          if (diff.size) { setChanged(diff); clearTimeout(flash); flash = setTimeout(() => alive && setChanged(new Set()), 2500); }
+        }
       } catch { /* keep last */ }
+      if (alive) timer = setTimeout(load, nextDelay(dataRef.current.tables, Date.now()));
     };
-    const id = setInterval(load, anyLive ? 30_000 : 300_000);
+    timer = setTimeout(load, nextDelay(dataRef.current.tables, Date.now()));
     const onVis = () => { if (document.visibilityState === "visible") load(); };
     document.addEventListener("visibilitychange", onVis);
-    return () => { alive = false; clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
-  }, [anyLive]);
+    return () => { alive = false; clearTimeout(timer); clearTimeout(flash); document.removeEventListener("visibilitychange", onVis); };
+  }, []);
+
+  // "עודכן לפני…" מתקדם כל 5 שניות
+  useEffect(() => {
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 5000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <div>
       <TablesNav tables={data.tables} />
 
-      <p className="mb-3 flex items-center gap-1.5 text-[12px] text-muted">
-        {anyLive ? <><LiveDot /><b className="text-down">יש משחקים עכשיו</b> · הטבלאות מתעדכנות חי כל 30 שניות</> : "מתעדכן בכל כניסה לדף"}
-        <span>· עודכן <span dir="ltr" className="tabular">{hm(data.at)}</span></span>
+      <p className="mb-3 flex flex-wrap items-center gap-x-1.5 text-[12px] text-muted">
+        {anyLive ? <><LiveDot /><b className="text-down">יש משחקים עכשיו</b> · מתעדכן חי כל 15 שניות</> : "הטבלאות מתעדכנות אוטומטית"}
+        <span>· עודכן <span className="tabular">{ago(data.at, now)}</span></span>
       </p>
 
       <div className="flex flex-col gap-5">
-        {data.tables.map((t) => <LeagueTable key={t.key} t={t} />)}
+        {data.tables.map((t) => <LeagueTable key={t.key} t={t} changed={changed} />)}
       </div>
 
       <p className="mb-16 mt-4 text-[11.5px] text-muted">מקור הנתונים: 365Scores (הוצלב מול ערוץ הספורט וה-API הרשמי של היורוליג).</p>
