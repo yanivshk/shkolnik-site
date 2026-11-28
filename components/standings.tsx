@@ -28,20 +28,20 @@ function TeamCell({ r }: { r: Row }) {
           {r.live && <LiveDot />}
         </div>
         {r.live ? (
-          // תוצאה חיה: התוצאה של הקבוצה בשורה קודם, הדקה, והיריבה
+          // תוצאה חיה: השערים של הקבוצה בשורה מימין (נקראים ראשונים בעברית), של היריבה משמאל; הדקה, והיריבה
           <div className="mt-0.5 flex min-w-0 items-center gap-1 text-[11.5px]">
             <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md bg-down px-1.5 py-px font-extrabold text-white">
-              <span dir="ltr" className="tabular">{r.live.my}–{r.live.their}</span>
+              <span dir="ltr" className="tabular">{r.live.their}–{r.live.my}</span>
               {r.live.clock && <span dir="ltr" className="tabular font-bold opacity-90">{r.live.clock}</span>}
             </span>
             <span className="truncate font-semibold text-muted">מול {r.live.opponent}</span>
           </div>
         ) : r.final ? (
-          // משחק שהסתיים לאחרונה — כבר נספר בטבלה
+          // משחק שהסתיים לאחרונה — כבר נספר בטבלה (גם כאן: הקבוצה בשורה מימין)
           <div className="mt-0.5 flex min-w-0 items-center gap-1 text-[11.5px]">
             <span className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-px font-extrabold ${res === "win" ? "bg-up/15 text-up" : res === "loss" ? "bg-down/10 text-down" : "bg-royal/10 text-royal"}`}>
               <span>הסתיים</span>
-              <span dir="ltr" className="tabular">{r.final.my}–{r.final.their}</span>
+              <span dir="ltr" className="tabular">{r.final.their}–{r.final.my}</span>
             </span>
             <span className="truncate font-semibold text-muted">מול {r.final.opponent}</span>
           </div>
