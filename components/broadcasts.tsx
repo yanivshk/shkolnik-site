@@ -52,11 +52,13 @@ function Row({ b, i, ucl = false }: { b: Broadcast; i: number; ucl?: boolean }) 
       </td>
       {/* לחיצה על השעה מוסיפה את המשחק ליומן. אייקון היומן יושב בגובה תג היום — כדי שהשעה תהיה באותו קו גובה של התאריך */}
       <td dir="ltr" className="tabular whitespace-nowrap px-1 py-2.5 text-end font-bold text-navy sm:px-1.5 max-[399px]:px-0.5">
-        <a href={icsHref(b)} aria-label={`הוספה ליומן: ${b.team} נגד ${b.opponent}, ${b.time}`} title="הוספה ליומן" className="block">
+        <a href={icsHref(b)} aria-label={`הוספה ליומן: ${b.team} נגד ${b.opponent}, ${b.verified === false ? "תחילת שידור " : ""}${b.time}`} title="הוספה ליומן" className="block">
           <span className="mb-0.5 flex h-5 items-center justify-end text-royal/70" aria-hidden>
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18M12 13v5M9.5 15.5h5" /></svg>
           </span>
           <span className="block">{b.time}</span>
+          {/* שעה שלא אומתה מול לוח המשחקים — זו שעת תחילת השידור בערוץ, לא שעת הפתיחה */}
+          {b.verified === false && <span className="block text-[10.5px] font-semibold leading-tight text-muted" title="שעת תחילת השידור בערוץ — לא אומתה מול לוח המשחקים">שידור</span>}
         </a>
       </td>
       <td className="px-1 py-2.5 sm:px-1.5 max-[399px]:px-0.5">

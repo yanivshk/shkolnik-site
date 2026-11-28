@@ -3,13 +3,16 @@
 import { TZ } from "./config";
 import { classifySport, isExcluded, resolveSport, type Sport, type SportEvidence } from "./sport-classify";
 import { uclLogo } from "./ucl-teams";
+import { ALL_TEAM_IDS, UCL_COMPETITION, verifyTeamGame, verifyUclGame, type Kick } from "./kickoff";
 
 export type { Sport };
 
 export type Broadcast = {
   id: string;
   date: string; // YYYY-MM-DD (שעון ישראל)
-  time: string; // HH:MM
+  time: string; // HH:MM — שעת הפתיחה אחרי אימות מול 365; בלי אימות — שעת תחילת השידור
+  /** השעה אומתה מול לוח המשחקים של 365 (false = זו שעת תחילת השידור מהערוץ) */
+  verified?: boolean;
   sport: Sport | null; // null = לא ניתן לקבוע בוודאות — מוצג בלי אייקון ענף, לא בניחוש
   team: string; // הקבוצה שלנו
   logo?: string; // לוגו הקבוצה שלנו בענף הזה (רק כשהענף ידוע)
@@ -208,9 +211,54 @@ async function fetchRaws(from: string, days: number): Promise<Raw[]> {
 
 const byTime = (a: Broadcast, b: Broadcast) => (a.date + a.time).localeCompare(b.date + b.time);
 
+/* ---------------- אימות שעות מול 365 ---------------- */
+
+const API365 = "https://webws.365scores.com/web";
+const Q365 = "appTypeId=5&langId=2&timezoneName=Asia%2FJerusalem&userCountryId=6";
+type Raw365Game = {
+  id: number; sportId: number; competitionId: number; startTime: string; statusGroup: number;
+  homeCompetitor: { id: number; name: string }; awayCompetitor: { id: number; name: string };
+};
+
+async function json365(path: string): Promise<{ games?: Raw365Game[] } | null> {
+  const body = await getText(`${API365}/${path}&${Q365}`);
+  if (!body) return null;
+  try { return JSON.parse(body); } catch { return null; }
+}
+
+/** המשחקים של הקבוצות שלנו + ליגת האלופות (שבוע אחורה ושבוע קדימה). כשל → רשימה ריקה, והשעות יסומנו כשעות שידור */
+async function games365(): Promise<Kick[]> {
+  const ids = ALL_TEAM_IDS.join(",");
+  const parts = await Promise.all([
+    json365(`games/results/?competitors=${ids}`),
+    json365(`games/current/?competitors=${ids}`),
+    json365(`games/fixtures/?competitors=${ids}`),
+    json365(`games/current/?competitions=${UCL_COMPETITION}`),
+    json365(`games/fixtures/?competitions=${UCL_COMPETITION}`),
+  ]);
+  const byId = new Map<number, Kick>();
+  for (const g of parts.flatMap((p) => p?.games ?? [])) {
+    byId.set(g.id, {
+      id: g.id, sportId: g.sportId, competitionId: g.competitionId, start: g.startTime, status: g.statusGroup,
+      home: { id: g.homeCompetitor.id, name: g.homeCompetitor.name }, away: { id: g.awayCompetitor.id, name: g.awayCompetitor.name },
+    });
+  }
+  return [...byId.values()];
+}
+
+/** בדיקה כפולה לכל שורה לפני ההצגה: שעת השידור מול שעת הפתיחה ב-365 */
+function withKickoff(items: Broadcast[], games: Kick[], ucl: boolean): Broadcast[] {
+  return items.map((b) => {
+    const v = ucl ? verifyUclGame({ date: b.date, time: b.time, home: b.team, away: b.opponent }, games) : verifyTeamGame(b, games);
+    if (!v.verified) console.warn(`[broadcasts] שעה לא אומתה מול 365: ${b.date} ${b.time} ${b.team} - ${b.opponent}`);
+    return { ...b, time: v.time, verified: v.verified };
+  });
+}
+
 export async function getBroadcasts(from: string, days = BROADCAST_DAYS): Promise<BroadcastDay> {
   if (process.env.MOCK_DATA === "1") return { from, days, items: mockBroadcasts(from) };
-  return { from, days, items: toBroadcasts(await fetchRaws(from, days)).sort(byTime) };
+  const [raws, games] = await Promise.all([fetchRaws(from, days), games365()]);
+  return { from, days, items: withKickoff(toBroadcasts(raws), games, false).sort(byTime) };
 }
 
 /* ---------------- ליגת האלופות בכדורגל ---------------- */
@@ -247,7 +295,8 @@ function toChampions(raws: Raw[]): Broadcast[] {
 
 export async function getChampions(from: string, days = BROADCAST_DAYS): Promise<BroadcastDay> {
   if (process.env.MOCK_DATA === "1") return { from, days, items: mockChampions(from) };
-  return { from, days, items: toChampions(await fetchRaws(from, days)).sort(byTime) };
+  const [raws, games] = await Promise.all([fetchRaws(from, days), games365()]);
+  return { from, days, items: withKickoff(toChampions(raws), games, true).sort(byTime) };
 }
 
 function mockChampions(from: string): Broadcast[] {
